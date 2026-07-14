@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Air Instrument Studio (Custom Scale Edition)</title>
+    <title>Air Instrument Studio (Fixed Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
@@ -75,7 +75,6 @@
             border-color: #ffbc2e;
         }
 
-        /* 範圍選擇並排樣式 */
         .range-container {
             display: flex;
             gap: 10px;
@@ -166,7 +165,7 @@
                 </select>
             </div>
 
-            <!-- 【新增】自訂音域範圍下拉選單 -->
+            <!-- 自訂音域範圍下拉選單 -->
             <div class="range-container">
                 <div class="select-box">
                     <label for="lowNoteSelect">最低音 (Low)</label>
@@ -193,7 +192,7 @@
             <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 自訂音域系統已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 系統偵錯面板就緒。</div>
             </div>
         </div>
 
@@ -234,7 +233,6 @@
         // ==========================================
         // 🎼 動態音階生成演算法
         // ==========================================
-        // 完整的鋼琴白鍵（自然音階）列表，用來動態產生範圍
         const allWhiteKeys = [
             "C2", "D2", "E2", "F2", "G2", "A2", "B2",
             "C3", "D3", "E3", "F3", "G3", "A3", "B3",
@@ -251,14 +249,12 @@
                 const opt1 = document.createElement('option');
                 opt1.value = note;
                 opt1.innerText = note;
-                // 長號預設最低音 G2
                 if (note === "G2") opt1.selected = true;
                 lowNoteSelect.appendChild(opt1);
 
                 const opt2 = document.createElement('option');
                 opt2.value = note;
                 opt2.innerText = note;
-                // 長號預設最高音 A3
                 if (note === "A3") opt2.selected = true;
                 highNoteSelect.appendChild(opt2);
             });
@@ -268,22 +264,25 @@
         // 儲存當前動態生成的音階陣列
         let currentScale = [];
 
+        // 【Bug 修正 1】宣告遺漏的 pitchHistory 變數，維持歷史圖表數據
+        const historySize = 80; 
+        const pitchHistory = new Array(historySize).fill(null);
+
         // 生成當前音域的白鍵自然音階
         function generateNaturalScale(low, high) {
             const lowIdx = allWhiteKeys.indexOf(low);
             const highIdx = allWhiteKeys.indexOf(high);
             if (lowIdx === -1 || highIdx === -1 || lowIdx >= highIdx) {
-                return ["C3", "D3", "E3", "F3", "G3", "A3", "B3"]; // 安全退路音階
+                return ["C3", "D3", "E3", "F3", "G3", "A3", "B3"]; 
             }
             return allWhiteKeys.slice(lowIdx, highIdx + 1);
         }
 
-        // 將自然音階過濾成東方五聲音階 (宮商角徵羽，相對比例 1, 2, 3, 5, 6)
+        // 將自然音階過濾成東方五聲音階
         function convertToPentatonic(naturalScale) {
-            // 五聲音階相對名：C=1, D=2, E=3, G=5, A=6 (避開 F=4 和 B=7)
             const pentatonicSteps = ["C", "D", "E", "G", "A"];
             return naturalScale.filter(note => {
-                const pitchLetter = note.slice(0, -1); // 取得音名（去尾部數字）
+                const pitchLetter = note.slice(0, -1); 
                 return pentatonicSteps.includes(pitchLetter);
             });
         }
@@ -293,7 +292,6 @@
             let low = lowNoteSelect.value;
             let high = highNoteSelect.value;
             
-            // 防呆：如果最低音被調得比最高音高，強制拉大間距
             const lowIdx = allWhiteKeys.indexOf(low);
             const highIdx = allWhiteKeys.indexOf(high);
             if (lowIdx >= highIdx) {
@@ -305,20 +303,16 @@
             let fullScale = generateNaturalScale(low, high);
 
             if (currentInstrument === 'guzheng') {
-                // 古箏模式：自動過濾成好聽的五聲音階
                 currentScale = convertToPentatonic(fullScale);
-                // 防呆：如果五聲音階篩選完太少，退回自然音階
                 if (currentScale.length < 3) currentScale = fullScale;
             } else {
-                // 長號模式：使用標準自然音階
                 currentScale = fullScale;
             }
 
             logMsg(`🎵 當前音階已更新為: [${currentScale.join(", ")}] (共 ${currentScale.length} 個音階)`, "info");
-            activeNote = null; // 重置演奏音
+            activeNote = null; 
         }
 
-        // 監聽下拉選單更動
         lowNoteSelect.addEventListener('change', updateDynamicScale);
         highNoteSelect.addEventListener('change', updateDynamicScale);
 
@@ -348,7 +342,6 @@
         let activeNote = null;
         let currentInstrument = 'trombone'; 
 
-        // 初始化音階
         updateDynamicScale();
 
         function getCurrentSampler() {
@@ -362,7 +355,6 @@
 
             currentInstrument = e.target.value;
             
-            // 切換樂器時，針對不同樂器設定預設的舒適音域
             if (currentInstrument === 'trombone') {
                 lowNoteSelect.value = "G2";
                 highNoteSelect.value = "A3";
@@ -377,10 +369,9 @@
             updateDynamicScale();
         });
 
-        // === 測試發聲 ===
         testAudioBtn.addEventListener('mousedown', () => {
             const sampler = getCurrentSampler();
-            const testNote = currentScale[Math.floor(currentScale.length / 2)]; // 吹奏中間音測試
+            const testNote = currentScale[Math.floor(currentScale.length / 2)]; 
             logMsg(`測試 ${currentInstrument === 'trombone' ? '長號' : '古箏'} 中音 (${testNote})...`, "info");
             
             if (sampler.loaded) {
@@ -457,7 +448,6 @@
                         ctx.moveTo(30, currentY);
                         ctx.quadraticCurveTo(handX, currentY + (Math.sin(Date.now() / 20) * 6), canvasElement.width - 30, currentY);
                     } else {
-                        // 第 1、5、9 根綠弦，其餘鋼弦（依據自訂琴弦數彈性分配）
                         ctx.strokeStyle = (i % 4 === 0) ? "#27ae60" : "#dcdde1";
                         ctx.lineWidth = (i % 4 === 0) ? 2.5 : 1.5;
                         ctx.shadowBlur = 0;
@@ -466,7 +456,6 @@
                     }
                     ctx.stroke();
 
-                    // 繪製古箏弦音名
                     ctx.fillStyle = "#ffbc2e";
                     ctx.font = "bold 13px sans-serif";
                     ctx.fillText(currentScale[i], canvasElement.width - 80, currentY - 5);
