@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Trombone Studio (Full Trombone Timbre)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #1a1a1a; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .app-container { display: flex; gap: 30px; background: #2b2b2b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .side-panel { display: flex; flex-direction: column; gap: 15px; width: 320px; }
+        h1 { margin: 0; font-size: 24px; color: #ffbc2e; }
+        
+        button { padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
+        button:hover { background-color: #e5a822; }
+        button:disabled { background-color: #666; color: #aaa; cursor: not-allowed; }
+        
+        .test-btn { background-color: #3498db; color: #fff; padding: 10px; font-size: 14px; margin-top: -5px; }
+        .test-btn:hover { background-color: #2980b9; }
+
+        .status-box { background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #444; text-align: center; }
+        #noteDisplay { font-size: 32px; font-weight: bold; color: #ffbc2e; margin-top: 5px; }
+        #positionDisplay { font-size: 14px; color: #888; }
+
+        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 200px; }
+        
+        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .log-info { color: #2ecc71; margin-bottom: 4px; }
+        .log-warn { color: #f1c40f; margin-bottom: 4px; }
+        .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
+
+        #canvas-container { position: relative; width: 640px; height: 480px; border: 2px solid #111; border-radius: 8px; overflow: hidden; background: #000; }
+        video, #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="side-panel">
+            <h1>🎺 Air Trombone Studio</h1>
+            <button id="startBtn">啟動系統 (Start)</button>
+            <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
+            
+            <div class="status-box">
+                <div id="noteDisplay">--</div>
+                <div id="positionDisplay">等待啟動...</div>
+            </div>
+
+            <canvas id="graph_canvas" width="320" height="200"></canvas>
+
+            <div class="debug-panel" id="debugLog">
+                <div class="log-info" style="color: #888;">[System] 全音域長號取樣版已就緒。</div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const graphCanvas = document.getElementById('graph_canvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const testAudioBtn = document.getElementById('testAudioBtn');
+        const noteDisplay = document.getElementById('noteDisplay');
+        const positionDisplay = document.getElementById('positionDisplay');
+        const debugLog = document.getElementById('debugLog');
+
+        function logMsg(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log-${type}`;
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            div.innerText = `[${time}] ${msg}`;
+            debugLog.appendChild(div);
+            debugLog.scrollTop = debugLog.scrollHeight; 
+            console.log(`[${type.toUpperCase()}] ${msg}`);
+        }
+
+        canvasElement.width = 640;
+        canvasElement.height = 480;
+
+        // ==========================================
+        // 🔊 音訊路由設計 (使用安全 Freeverb)
+        // ==========================================
+        const safeReverb = new Tone.Freeverb({ roomSize: 0.6, dampening: 3000 }).toDestination();
+
+        // 1. 真實取樣機 (接往 Freeverb)
+        // Tone.js 會自動以 D3 為基準，幫其他所有音高做高品質的升降音（變調）
+        const sampler = new Tone.Sampler({
+            urls: { "D3": "trombone-D3.wav" }, 
+            release: 0.5,
+            baseUrl: "./" 
+        }).connect(safeReverb);
+
+        // 2. 備用合成引擎 (僅在 wav 尚未載入完成時做為緩衝)
+        const backupSynth = new Tone.FMSynth({
+            harmonicity: 1.5,
+            modulationIndex: 2,
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.05, decay: 0.3, sustain: 0.8, release: 0.4 },
+            modulation: { type: "triangle" },
+            modulationEnvelope: { attack: 0.1, decay: 0.2, sustain: 1, release: 0.4 }
+        }).toDestination();
+
+        let activeNote = null;
+        const trombonePositions = ["G2", "A2", "B2", "C3", "D3", "E3", "F3", "G3", "A3"];
+        const historySize = 80; 
+        const pitchHistory = new Array(historySize).fill(null);
+
+        // === 測試發聲按鈕邏輯 ===
+        testAudioBtn.addEventListener('mousedown', () => {
+            logMsg("測試長號取樣音色...", "info");
+            if (sampler.loaded) {
+                sampler.triggerAttack("C3");
+            } else {
+                backupSynth.triggerAttack("C3");
+            }
+        });
+        testAudioBtn.addEventListener('mouseup', () => {
+            sampler.releaseAll();
+            backupSynth.triggerRelease();
+        });
+        testAudioBtn.addEventListener('mouseleave', () => {
+            sampler.releaseAll();
+            backupSynth.triggerRelease();
+        });
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.disabled = true;
+            logMsg("解鎖 Tone.js 音訊核心...", "info");
+            
+            try {
+                await Tone.start();
+                logMsg("音訊核心已啟動，主輸出通道開啟！", "info");
+                
+                testAudioBtn.disabled = false;
+                logMsg("👉 請點擊上方的 [🔊 強制測試發聲] 確認是否為長號聲！", "warn");
+                
+                startBtn.style.display = 'none';
+                positionDisplay.innerText = "舉起右手開始演奏！";
+                camera.start();
+
+            } catch (err) {
+                logMsg(`啟動失敗: ${err.message}`, "error");
+                startBtn.innerText = "啟動失敗";
+                startBtn.disabled = false;
+            }
+        });
+
+        function drawTrombone(ctx, noseX, noseY, handX, handY) {
+            const dx = handX - noseX; const dy = handY - noseY;
+            const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
+            ctx.save(); ctx.translate(noseX, noseY); ctx.rotate(angle);           
+
+            ctx.beginPath(); ctx.strokeStyle = '#ffbc2e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+            ctx.moveTo(0, 0); ctx.lineTo(-120, 0); ctx.arc(-120, 20, 20, 1.5 * Math.PI, 0.5 * Math.PI, true); ctx.lineTo(100, 40); ctx.bezierCurveTo(130, 40, 140, 10, 150, 10); ctx.lineTo(150, 70); ctx.bezierCurveTo(140, 70, 130, 40, 100, 40); ctx.stroke();
+            
+            ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0;
+            ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
+            
+            ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+            let slideStart = Math.max(0, dist - 150); 
+            ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
+            
+            ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
+            ctx.restore();
+        }
+
+        function updateGraph(smoothPosition) {
+            pitchHistory.push(smoothPosition); pitchHistory.shift();
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            const topMargin = 15; const lineSpacing = 20; const leftPadding = 40; 
+
+            graphCtx.font = "12px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
+            for(let i = 0; i <= 8; i++) {
+                let y = topMargin + (i * lineSpacing);
+                graphCtx.fillStyle = '#888'; graphCtx.fillText(trombonePositions[i], leftPadding / 2, y);
+                graphCtx.beginPath(); graphCtx.strokeStyle = '#333'; graphCtx.lineWidth = 1; graphCtx.moveTo(leftPadding, y); graphCtx.lineTo(graphCanvas.width, y); graphCtx.stroke();
+            }
+
+            graphCtx.beginPath(); graphCtx.strokeStyle = '#ffbc2e'; graphCtx.lineWidth = 3; graphCtx.lineJoin = 'round';
+            let isDrawing = false;
+            for (let i = 0; i < historySize; i++) {
+                let posVal = pitchHistory[i];
+                let x = leftPadding + (i / historySize) * (graphCanvas.width - leftPadding);
+                if (posVal !== null) {
+                    let y = topMargin + (posVal * lineSpacing);
+                    if (!isDrawing) { graphCtx.moveTo(x, y); isDrawing = true; } 
+                    else { graphCtx.lineTo(x, y); }
+                } else { isDrawing = false; }
+            }
+            graphCtx.stroke();
+        }
+
+        const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
+
+        let engineWarned = false;
+
+        pose.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            try {
+                if (results.poseLandmarks) {
+                    const nose = results.poseLandmarks[0];
+                    const rightHand = results.poseLandmarks[20]; 
+
+                    if (nose.visibility > 0.6 && rightHand.visibility > 0.6) {
+                        const noseX = nose.x * canvasElement.width; const noseY = nose.y * canvasElement.height;
+                        const handX = rightHand.x * canvasElement.width; const handY = rightHand.y * canvasElement.height;
+
+                        drawTrombone(canvasCtx, noseX, noseY, handX, handY);
+
+                        const distanceNorm = Math.abs(rightHand.x - nose.x);
+                        let smoothPosition = (distanceNorm - 0.08) * 15;
+                        smoothPosition = Math.max(0, Math.min(smoothPosition, 8));
+
+                        let positionIndex = Math.floor(smoothPosition);
+                        const targetNote = trombonePositions[positionIndex];
+
+                        if (targetNote !== activeNote) {
+                            if (activeNote) {
+                                sampler.triggerRelease(activeNote);
+                                backupSynth.triggerRelease();
+                            }
+                            
+                            // 【關鍵修正】只要 sampler（長號音檔）成功載入，所有的音高都直接使用長號取樣播放！
+                            if (sampler.loaded) {
+                                sampler.triggerAttack(targetNote);
+                                if (engineWarned) {
+                                    logMsg("✅ 取樣機已恢復正常運作", "info");
+                                    engineWarned = false; 
+                                }
+                            } else {
+                                // 只有在音檔載入完成前，才使用合成器當作過渡
+                                backupSynth.triggerAttack(targetNote);
+                                if (!engineWarned) {
+                                    logMsg("⚠️ 正在載入長號取樣音檔，暫時啟用合成引擎...", "warn");
+                                    engineWarned = true; 
+                                }
+                            }
+                            
+                            activeNote = targetNote;
+                            noteDisplay.innerText = targetNote;
+                            positionDisplay.innerText = `Pos: ${positionIndex + 1}`;
+                        }
+                        updateGraph(smoothPosition);
+                    } else {
+                        if (activeNote) {
+                            if (sampler.loaded) sampler.releaseAll();
+                            backupSynth.triggerRelease();
+                            activeNote = null;
+                            noteDisplay.innerText = "--";
+                            positionDisplay.innerText = "等待動作...";
+                        }
+                        updateGraph(null);
+                    }
+                }
+            } catch (error) {
+                logMsg(`執行錯誤: ${error.message}`, "error");
+            } finally {
+                canvasCtx.restore();
+            }
+        });
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 640, height: 480
+        });
+    </script>
+</body>
+</html>
