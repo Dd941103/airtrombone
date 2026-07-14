@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Air Trombone Studio (Responsive & Landscape Edition)</title>
+    <title>Air Instrument Studio (Trombone & Guzheng Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     
     <style>
-        /* 基礎全螢幕設定 */
         body { 
             margin: 0; 
             display: flex; 
@@ -22,10 +21,9 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             padding: 10px;
             box-sizing: border-box;
-            overflow: hidden; /* 防止橫向時出現多餘滾動條 */
+            overflow: hidden;
         }
 
-        /* 主容器：電腦預設左右排版 */
         .app-container { 
             display: flex; 
             flex-direction: row; 
@@ -52,6 +50,31 @@
 
         h1 { margin: 0; font-size: 22px; color: #ffbc2e; text-align: center; }
         
+        .select-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .select-box label {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: bold;
+        }
+        select {
+            padding: 12px;
+            font-size: 15px;
+            background-color: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+        select:focus {
+            border-color: #ffbc2e;
+        }
+
         button { padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
         button:hover { background-color: #e5a822; }
         button:disabled { background-color: #666; color: #aaa; cursor: not-allowed; }
@@ -70,7 +93,6 @@
         .log-warn { color: #f1c40f; margin-bottom: 4px; }
         .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
 
-        /* 視訊容器 */
         #canvas-container { 
             position: relative; 
             flex-grow: 1;
@@ -93,60 +115,30 @@
             object-fit: cover; 
         }
 
-        /* ==========================================
-           📱 【手機直向模式】 (寬度小且高大於寬)
-           ========================================== */
+        /* 📱 手機直向 */
         @media (max-width: 850px) and (orientation: portrait) {
-            body {
-                align-items: flex-start;
-                overflow-y: auto; /* 直向允許上下滑動 */
-            }
-            .app-container { 
-                flex-direction: column-reverse; /* 視訊在上面，控制台在下面 */
-                padding: 12px;
-                gap: 12px;
-                max-height: none;
-            }
-            .side-panel { 
-                width: 100%; 
-            }
-            #canvas-container {
-                max-width: 100%; 
-            }
+            body { align-items: flex-start; overflow-y: auto; }
+            .app-container { flex-direction: column-reverse; padding: 12px; gap: 12px; max-height: none; }
+            .side-panel { width: 100%; }
+            #canvas-container { max-width: 100%; }
         }
 
-        /* ==========================================
-           📱 【手機橫向特別優化】 (寬大於高，且高度較矮)
-           ========================================== */
+        /* 📱 手機橫向 */
         @media (max-height: 500px) and (orientation: landscape) {
-            body {
-                padding: 5px;
-                overflow: hidden; /* 確保不出現滾動條 */
-            }
-            .app-container {
-                flex-direction: row; /* 保持左右並排 */
-                padding: 10px;
-                gap: 15px;
-                height: 96vh; /* 高度剛好撐滿螢幕 */
-                border-radius: 8px;
-            }
-            .side-panel {
-                width: 220px; /* 橫向時窄化左邊控制台 */
-                gap: 5px;
-            }
-            h1 { font-size: 16px; }
+            body { padding: 5px; overflow: hidden; }
+            .app-container { flex-direction: row; padding: 10px; gap: 15px; height: 96vh; border-radius: 8px; }
+            .side-panel { width: 220px; gap: 5px; }
+            h1 { font-size: 15px; }
             button { padding: 8px; font-size: 13px; }
             .test-btn { padding: 5px; font-size: 11px; }
             .status-box { padding: 4px; }
             #noteDisplay { font-size: 22px; }
             #positionDisplay { font-size: 11px; }
-            #graph_canvas { height: 75px; } /* 縮小折線圖，完美塞進窄螢幕 */
-            .debug-panel { height: 50px; font-size: 10px; }
-            
-            #canvas-container {
-                max-height: 100%; /* 視訊高度不超出容器 */
-                aspect-ratio: 4 / 3;
-            }
+            #graph_canvas { height: 60px; } 
+            .debug-panel { height: 45px; font-size: 10px; }
+            select { padding: 6px; font-size: 12px; }
+            .select-box label { font-size: 10px; }
+            #canvas-container { max-height: 100%; aspect-ratio: 4 / 3; }
         }
     </style>
 </head>
@@ -154,7 +146,16 @@
 
     <div class="app-container">
         <div class="side-panel">
-            <h1>🎺 Air Trombone</h1>
+            <h1>🎺 Air Studio</h1>
+            
+            <div class="select-box">
+                <label for="instrumentSelect">選擇樂器與演奏方式</label>
+                <select id="instrumentSelect">
+                    <option value="trombone">長號 Trombone (前後拉管)</option>
+                    <option value="guzheng">古箏 Guzheng (橫向撥弦)</option>
+                </select>
+            </div>
+
             <button id="startBtn">啟動系統 (Start)</button>
             <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
             
@@ -166,7 +167,7 @@
             <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 雙向響應系統已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 古箏跨界系統已就緒。</div>
             </div>
         </div>
 
@@ -187,6 +188,7 @@
         const noteDisplay = document.getElementById('noteDisplay');
         const positionDisplay = document.getElementById('positionDisplay');
         const debugLog = document.getElementById('debugLog');
+        const instrumentSelect = document.getElementById('instrumentSelect');
 
         function logMsg(msg, type = 'info') {
             const div = document.createElement('div');
@@ -202,46 +204,81 @@
         canvasElement.height = 480;
 
         // ==========================================
-        // 🔊 音訊路由設計 (使用安全 Freeverb)
+        // 🔊 音訊路由與多取樣機設定
         // ==========================================
-        const safeReverb = new Tone.Freeverb({ roomSize: 0.6, dampening: 3000 }).toDestination();
+        const safeReverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 2500 }).toDestination();
 
-        const sampler = new Tone.Sampler({
+        // 1. 長號取樣機
+        const tromboneSampler = new Tone.Sampler({
             urls: { "D3": "trombone-D3.wav" }, 
             release: 0.5,
             baseUrl: "./" 
         }).connect(safeReverb);
 
-        const backupSynth = new Tone.FMSynth({
-            harmonicity: 1.5,
-            modulationIndex: 2,
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.05, decay: 0.3, sustain: 0.8, release: 0.4 },
-            modulation: { type: "triangle" },
-            modulationEnvelope: { attack: 0.1, decay: 0.2, sustain: 1, release: 0.4 }
-        }).toDestination();
+        // 2. 古箏取樣機
+        const guzhengSampler = new Tone.Sampler({
+            urls: { "D4": "guzheng-D4.wav" }, 
+            release: 0.8, // 古箏餘音較長，release 設大一點聽起來比較悠揚
+            baseUrl: "./" 
+        }).connect(safeReverb);
+
+        // 3. 備用合成引擎（特別優化為帶有古琴/古箏物理建模質感的 Pluck 音色）
+        const backupSynth = new Tone.PluckSynth({
+            attackNoise: 1.5,
+            dampening: 4000,
+            resonance: 0.95
+        }).connect(safeReverb);
 
         let activeNote = null;
-        const trombonePositions = ["G2", "A2", "B2", "C3", "D3", "E3", "F3", "G3", "A3"];
+        let currentInstrument = 'trombone'; 
+
+        const instrumentScales = {
+            trombone: ["G2", "A2", "B2", "C3", "D3", "E3", "F3", "G3", "A3"],
+            // 古箏使用經典五聲調式 (D 宮調式五聲音階)：1, 2, 3, 5, 6
+            guzheng: ["D3", "E3", "G3", "A3", "B3", "D4", "E4", "G4", "A4"] 
+        };
+
         const historySize = 80; 
         const pitchHistory = new Array(historySize).fill(null);
 
-        // === 測試發聲按鈕邏輯 ===
-        testAudioBtn.addEventListener('mousedown', () => {
-            logMsg("測試長號取樣音色...", "info");
-            if (sampler.loaded) {
-                sampler.triggerAttack("C3");
+        function getCurrentSampler() {
+            return currentInstrument === 'trombone' ? tromboneSampler : guzhengSampler;
+        }
+
+        function getCurrentScale() {
+            return instrumentScales[currentInstrument];
+        }
+
+        instrumentSelect.addEventListener('change', (e) => {
+            tromboneSampler.releaseAll();
+            guzhengSampler.releaseAll();
+            activeNote = null;
+
+            currentInstrument = e.target.value;
+            if (currentInstrument === 'trombone') {
+                logMsg("已切換為：長號 (左右拉管模式)", "info");
+                positionDisplay.innerText = "左右滑動右手拉管演奏";
             } else {
-                backupSynth.triggerAttack("C3");
+                logMsg("已切換為：古箏 (左右撥弦模式)", "info");
+                positionDisplay.innerText = "用右手在空中撥動琴弦演奏";
+            }
+        });
+
+        // === 測試發聲 ===
+        testAudioBtn.addEventListener('mousedown', () => {
+            const sampler = getCurrentSampler();
+            const scale = getCurrentScale();
+            const testNote = scale[5]; // 測試第 6 個音
+            logMsg(`測試 ${currentInstrument === 'trombone' ? '長號' : '古箏'} 音色 (${testNote})...`, "info");
+            
+            if (sampler.loaded) {
+                sampler.triggerAttack(testNote);
+            } else {
+                backupSynth.triggerAttack(testNote);
             }
         });
         testAudioBtn.addEventListener('mouseup', () => {
-            sampler.releaseAll();
-            backupSynth.triggerRelease();
-        });
-        testAudioBtn.addEventListener('mouseleave', () => {
-            sampler.releaseAll();
-            backupSynth.triggerRelease();
+            getCurrentSampler().releaseAll();
         });
 
         startBtn.addEventListener('click', async () => {
@@ -250,38 +287,95 @@
             
             try {
                 await Tone.start();
-                logMsg("音訊核心已啟動，主輸出通道開啟！", "info");
-                
+                logMsg("音訊核心已啟動！", "info");
                 testAudioBtn.disabled = false;
-                logMsg("👉 請點擊上方 [🔊 強制測試發聲] 確認音色！", "warn");
-                
                 startBtn.style.display = 'none';
                 positionDisplay.innerText = "舉起右手開始演奏！";
                 camera.start();
-
             } catch (err) {
                 logMsg(`啟動失敗: ${err.message}`, "error");
-                startBtn.innerText = "啟動失敗";
                 startBtn.disabled = false;
             }
         });
 
-        function drawTrombone(ctx, noseX, noseY, handX, handY) {
-            const dx = handX - noseX; const dy = handY - noseY;
-            const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
-            ctx.save(); ctx.translate(noseX, noseY); ctx.rotate(angle);           
+        // ==========================================
+        // 🎨 畫布視覺繪製（長號 VS 古箏琴弦）
+        // ==========================================
+        function drawInstrument(ctx, noseX, noseY, handX, handY) {
+            ctx.save();
 
-            ctx.beginPath(); ctx.strokeStyle = '#ffbc2e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
-            ctx.moveTo(0, 0); ctx.lineTo(-120, 0); ctx.arc(-120, 20, 20, 1.5 * Math.PI, 0.5 * Math.PI, true); ctx.lineTo(100, 40); ctx.bezierCurveTo(130, 40, 140, 10, 150, 10); ctx.lineTo(150, 70); ctx.bezierCurveTo(140, 70, 130, 40, 100, 40); ctx.stroke();
-            
-            ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0;
-            ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
-            
-            ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
-            let slideStart = Math.max(0, dist - 150); 
-            ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
-            
-            ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
+            if (currentInstrument === 'trombone') {
+                // 【長號視覺】
+                const dx = handX - noseX; const dy = handY - noseY;
+                const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
+                ctx.translate(noseX, noseY); ctx.rotate(angle);           
+
+                ctx.beginPath(); ctx.strokeStyle = '#ffbc2e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+                ctx.moveTo(0, 0); ctx.lineTo(-120, 0); ctx.arc(-120, 20, 20, 1.5 * Math.PI, 0.5 * Math.PI, true); ctx.lineTo(100, 40); ctx.bezierCurveTo(130, 40, 140, 10, 150, 10); ctx.lineTo(150, 70); ctx.bezierCurveTo(140, 70, 130, 40, 100, 40); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0;
+                ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+                let slideStart = Math.max(0, dist - 150); 
+                ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
+            } else {
+                // 【古箏視覺】在畫面下方繪製 9 根橫向琴弦
+                const startY = canvasElement.height * 0.5; // 琴弦分布在畫面中下部
+                const endY = canvasElement.height * 0.9;
+                const stepY = (endY - startY) / 8;
+                
+                // 畫古箏的木質面板底框（古色古香的深紅棕色半透明框）
+                ctx.fillStyle = "rgba(101, 33, 33, 0.4)";
+                ctx.fillRect(30, startY - 20, canvasElement.width - 60, (endY - startY) + 40);
+                ctx.strokeStyle = "#8b4513";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(30, startY - 20, canvasElement.width - 60, (endY - startY) + 40);
+
+                // 繪製 9 根琴弦，並在被撥動時產生高亮與微幅震動
+                const scale = getCurrentScale();
+                const activeIndex = Math.floor(((handY - startY) / (endY - startY)) * 8);
+
+                for (let i = 0; i <= 8; i++) {
+                    const currentY = startY + (i * stepY);
+                    ctx.beginPath();
+                    
+                    if (handX > 50 && handX < canvasElement.width - 50 && Math.abs(handY - currentY) < stepY / 2) {
+                        // 當右手高度靠近某根琴弦時，發出溫暖的翡翠綠微光（模擬古箏的綠色琴弦標記）
+                        ctx.strokeStyle = "#2ecc71";
+                        ctx.lineWidth = 4;
+                        ctx.shadowColor = "#2ecc71";
+                        ctx.shadowBlur = 10;
+                        
+                        // 畫微震動的琴弦
+                        ctx.moveTo(30, currentY);
+                        ctx.quadraticCurveTo(handX, currentY + (Math.sin(Date.now() / 20) * 6), canvasElement.width - 30, currentY);
+                    } else {
+                        // 平時狀態：第 1, 5, 9 根為綠色標記弦，其餘為銀色白鋼弦
+                        ctx.strokeStyle = (i === 0 || i === 4 || i === 8) ? "#27ae60" : "#dcdde1";
+                        ctx.lineWidth = (i === 0 || i === 4 || i === 8) ? 2.5 : 1.5;
+                        ctx.shadowBlur = 0;
+                        ctx.moveTo(30, currentY);
+                        ctx.lineTo(canvasElement.width - 30, currentY);
+                    }
+                    ctx.stroke();
+
+                    // 在右側標示弦對應的古箏五聲音階名（宮商角徵羽）
+                    const gongShangNames = ["D 宮", "商", "角", "徵", "羽", "高宮", "高商", "高角", "高徵"];
+                    ctx.fillStyle = "#ffbc2e";
+                    ctx.font = "bold 14px sans-serif";
+                    ctx.fillText(gongShangNames[i], canvasElement.width - 80, currentY - 5);
+                }
+
+                // 在右手手掌位置畫一個撥弦的小圓環
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffbc2e";
+                ctx.lineWidth = 3;
+                ctx.arc(handX, handY, 15, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
             ctx.restore();
         }
 
@@ -289,19 +383,19 @@
             pitchHistory.push(smoothPosition); pitchHistory.shift();
             graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
             
-            // 根據 canvas 當前實際高度來動態調整線距，確保橫向縮小時不穿幫
             const topMargin = 10;
             const lineSpacing = (graphCanvas.height - (topMargin * 2)) / 8; 
             const leftPadding = 40; 
+            const currentScale = getCurrentScale();
 
             graphCtx.font = "10px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
             for(let i = 0; i <= 8; i++) {
                 let y = topMargin + (i * lineSpacing);
-                graphCtx.fillStyle = '#888'; graphCtx.fillText(trombonePositions[i], leftPadding / 2, y);
+                graphCtx.fillStyle = '#888'; graphCtx.fillText(currentScale[i], leftPadding / 2, y);
                 graphCtx.beginPath(); graphCtx.strokeStyle = '#333'; graphCtx.lineWidth = 1; graphCtx.moveTo(leftPadding, y); graphCtx.lineTo(graphCanvas.width, y); graphCtx.stroke();
             }
 
-            graphCtx.beginPath(); graphCtx.strokeStyle = '#ffbc2e'; graphCtx.lineWidth = 3; graphCtx.lineJoin = 'round';
+            graphCtx.beginPath(); graphCtx.strokeStyle = currentInstrument === 'trombone' ? '#ffbc2e' : '#2ecc71'; graphCtx.lineWidth = 3; graphCtx.lineJoin = 'round';
             let isDrawing = false;
             for (let i = 0; i < historySize; i++) {
                 let posVal = pitchHistory[i];
@@ -334,31 +428,48 @@
                         const noseX = nose.x * canvasElement.width; const noseY = nose.y * canvasElement.height;
                         const handX = rightHand.x * canvasElement.width; const handY = rightHand.y * canvasElement.height;
 
-                        drawTrombone(canvasCtx, noseX, noseY, handX, handY);
+                        drawInstrument(canvasCtx, noseX, noseY, handX, handY);
 
-                        const distanceNorm = Math.abs(rightHand.x - nose.x);
-                        let smoothPosition = (distanceNorm - 0.08) * 15;
+                        let smoothPosition = 0;
+
+                        if (currentInstrument === 'trombone') {
+                            // 【長號演奏】偵測右手與鼻子的「水平距離（X軸）」
+                            const distanceNorm = Math.abs(rightHand.x - nose.x);
+                            smoothPosition = (distanceNorm - 0.08) * 15;
+                        } else {
+                            // 【古箏演奏】偵測右手手指在畫面中的「垂直高度（Y軸）」來對應琴弦
+                            const startY = canvasElement.height * 0.5;
+                            const endY = canvasElement.height * 0.9;
+                            
+                            // 將右手高度對應到古箏的 9 根琴弦範圍
+                            const relativeY = (handY - startY) / (endY - startY);
+                            smoothPosition = relativeY * 8;
+                        }
+
                         smoothPosition = Math.max(0, Math.min(smoothPosition, 8));
 
                         let positionIndex = Math.floor(smoothPosition);
-                        const targetNote = trombonePositions[positionIndex];
+                        const currentScale = getCurrentScale();
+                        const targetNote = currentScale[positionIndex];
 
-                        if (targetNote !== activeNote) {
+                        // 如果右手不在古箏琴弦的有效橫向範圍內 (左右要留白，避免誤觸)
+                        const isInGuzhengRange = currentInstrument === 'trombone' || (handX > 40 && handX < canvasElement.width - 40);
+
+                        if (targetNote !== activeNote && isInGuzhengRange) {
                             if (activeNote) {
-                                sampler.triggerRelease(activeNote);
-                                backupSynth.triggerRelease();
+                                tromboneSampler.releaseAll();
+                                guzhengSampler.releaseAll();
                             }
                             
-                            if (sampler.loaded) {
-                                sampler.triggerAttack(targetNote);
-                                if (engineWarned) {
-                                    logMsg("✅ 取樣機已恢復正常運作", "info");
-                                    engineWarned = false; 
-                                }
+                            const activeSampler = getCurrentSampler();
+
+                            if (activeSampler.loaded) {
+                                activeSampler.triggerAttack(targetNote);
                             } else {
+                                // 觸發極像古箏撥弦的 PluckSynth
                                 backupSynth.triggerAttack(targetNote);
                                 if (!engineWarned) {
-                                    logMsg("⚠️ 正在載入長號取樣音檔...", "warn");
+                                    logMsg(`⚠️ 尚未加載【${currentInstrument}】音檔，已啟用古典撥弦引擎。`, "warn");
                                     engineWarned = true; 
                                 }
                             }
@@ -370,8 +481,8 @@
                         updateGraph(smoothPosition);
                     } else {
                         if (activeNote) {
-                            if (sampler.loaded) sampler.releaseAll();
-                            backupSynth.triggerRelease();
+                            tromboneSampler.releaseAll();
+                            guzhengSampler.releaseAll();
                             activeNote = null;
                             noteDisplay.innerText = "--";
                             positionDisplay.innerText = "等待動作...";
