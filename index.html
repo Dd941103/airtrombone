@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Air Instrument Studio (Fixed Edition)</title>
+    <title>Air Instrument Studio (Safari Fixed Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
@@ -35,6 +35,561 @@
             max-width: 1024px;
             width: 100%;
             height: auto;
+            max-height: 95vh;
+            box-sizing: border-box;
+        }
+
+        .side-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            width: 300px; 
+            flex-shrink: 0; 
+            justify-content: center;
+        }
+
+        h1 { margin: 0; font-size: 22px; color: #ffbc2e; text-align: center; }
+        
+        .select-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .select-box label {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: bold;
+        }
+        select {
+            padding: 10px;
+            font-size: 14px;
+            background-color: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
+        }
+        select:focus {
+            border-color: #ffbc2e;
+        }
+
+        .range-container {
+            display: flex;
+            gap: 10px;
+        }
+        .range-container .select-box {
+            flex: 1;
+        }
+
+        button { padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
+        button:hover { background-color: #e5a822; }
+        button:disabled { background-color: #666; color: #aaa; cursor: not-allowed; }
+        
+        .test-btn { background-color: #3498db; color: #fff; padding: 8px; font-size: 13px; margin-top: -5px; }
+        .test-btn:hover { background-color: #2980b9; }
+
+        .status-box { background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; text-align: center; }
+        #noteDisplay { font-size: 28px; font-weight: bold; color: #ffbc2e; margin-top: 3px; }
+        #positionDisplay { font-size: 13px; color: #888; }
+
+        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 120px; }
+        
+        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 8px; height: 80px; overflow-y: auto; font-family: monospace; font-size: 11px; }
+        .log-info { color: #2ecc71; margin-bottom: 4px; }
+        .log-warn { color: #f1c40f; margin-bottom: 4px; }
+        .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
+
+        #canvas-container { 
+            position: relative; 
+            flex-grow: 1;
+            width: 100%;
+            max-width: 640px; 
+            aspect-ratio: 4 / 3; 
+            border: 2px solid #111; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            background: #000; 
+        }
+
+        video, #output_canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            transform: scaleX(-1); 
+            object-fit: cover; 
+        }
+
+        /* 📱 手機直向 */
+        @media (max-width: 850px) and (orientation: portrait) {
+            body { align-items: flex-start; overflow-y: auto; }
+            .app-container { flex-direction: column-reverse; padding: 12px; gap: 12px; max-height: none; }
+            .side-panel { width: 100%; }
+            #canvas-container { max-width: 100%; }
+        }
+
+        /* 📱 手機橫向 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body { padding: 5px; overflow: hidden; }
+            .app-container { flex-direction: row; padding: 10px; gap: 15px; height: 96vh; border-radius: 8px; }
+            .side-panel { width: 220px; gap: 5px; }
+            h1 { font-size: 15px; }
+            button { padding: 8px; font-size: 13px; }
+            .test-btn { padding: 5px; font-size: 11px; }
+            .status-box { padding: 4px; }
+            #noteDisplay { font-size: 22px; }
+            #positionDisplay { font-size: 11px; }
+            #graph_canvas { height: 60px; } 
+            .debug-panel { height: 45px; font-size: 10px; }
+            select { padding: 5px; font-size: 11px; }
+            .select-box label { font-size: 9px; }
+            #canvas-container { max-height: 100%; aspect-ratio: 4 / 3; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="side-panel">
+            <h1>🎺 Air Studio</h1>
+            
+            <!-- 樂器選擇 -->
+            <div class="select-box">
+                <label for="instrumentSelect">選擇樂器</label>
+                <select id="instrumentSelect">
+                    <option value="trombone">長號 Trombone (前後拉管)</option>
+                    <option value="guzheng">古箏 Guzheng (橫向撥弦)</option>
+                </select>
+            </div>
+
+            <!-- 自訂音域範圍下拉選單 -->
+            <div class="range-container">
+                <div class="select-box">
+                    <label for="lowNoteSelect">最低音 (Low)</label>
+                    <select id="lowNoteSelect">
+                        <!-- 由 JS 動態生成選項 -->
+                    </select>
+                </div>
+                <div class="select-box">
+                    <label for="highNoteSelect">最高音 (High)</label>
+                    <select id="highNoteSelect">
+                        <!-- 由 JS 動態生成選項 -->
+                    </select>
+                </div>
+            </div>
+
+            <button id="startBtn">啟動系統 (Start)</button>
+            <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
+            
+            <div class="status-box">
+                <div id="noteDisplay">--</div>
+                <div id="positionDisplay">等待啟動...</div>
+            </div>
+
+            <canvas id="graph_canvas" width="320" height="150"></canvas>
+
+            <div class="debug-panel" id="debugLog">
+                <div class="log-info" style="color: #888;">[System] 系統偵錯面板就緒。</div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 最頂層優先宣告所有變數，防止 Safari 暫時性死區錯誤 ---
+        const videoElement = document.getElementById('video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const graphCanvas = document.getElementById('graph_canvas');
+        const graphCtx = graphCanvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const testAudioBtn = document.getElementById('testAudioBtn');
+        const noteDisplay = document.getElementById('noteDisplay');
+        const positionDisplay = document.getElementById('positionDisplay');
+        const debugLog = document.getElementById('debugLog');
+        const instrumentSelect = document.getElementById('instrumentSelect');
+        const lowNoteSelect = document.getElementById('lowNoteSelect');
+        const highNoteSelect = document.getElementById('highNoteSelect');
+
+        // 將歷史圖表變數宣告在最頂端，確保全域立即可用
+        const historySize = 80; 
+        const pitchHistory = new Array(historySize).fill(null);
+
+        function logMsg(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log-${type}`;
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            div.innerText = `[${time}] ${msg}`;
+            debugLog.appendChild(div);
+            debugLog.scrollTop = debugLog.scrollHeight; 
+            console.log(`[${type.toUpperCase()}] ${msg}`);
+        }
+
+        canvasElement.width = 640;
+        canvasElement.height = 480;
+
+        // ==========================================
+        // 🎼 動態音階生成演算法
+        // ==========================================
+        const allWhiteKeys = [
+            "C2", "D2", "E2", "F2", "G2", "A2", "B2",
+            "C3", "D3", "E3", "F3", "G3", "A3", "B3",
+            "C4", "D4", "E4", "F4", "G4", "A4", "B4",
+            "C5", "D5", "E5", "F5", "G5", "A5", "B5"
+        ];
+
+        // 初始化下拉選單
+        function initNoteSelects() {
+            lowNoteSelect.innerHTML = "";
+            highNoteSelect.innerHTML = "";
+            
+            allWhiteKeys.forEach((note, index) => {
+                const opt1 = document.createElement('option');
+                opt1.value = note;
+                opt1.innerText = note;
+                if (note === "G2") opt1.selected = true;
+                lowNoteSelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = note;
+                opt2.innerText = note;
+                if (note === "A3") opt2.selected = true;
+                highNoteSelect.appendChild(opt2);
+            });
+        }
+        initNoteSelects();
+
+        // 儲存當前動態生成的音階陣列
+        let currentScale = [];
+
+        // 生成當前音域的白鍵自然音階
+        function generateNaturalScale(low, high) {
+            const lowIdx = allWhiteKeys.indexOf(low);
+            const highIdx = allWhiteKeys.indexOf(high);
+            if (lowIdx === -1 || highIdx === -1 || lowIdx >= highIdx) {
+                return ["C3", "D3", "E3", "F3", "G3", "A3", "B3"]; 
+            }
+            return allWhiteKeys.slice(lowIdx, highIdx + 1);
+        }
+
+        // 將自然音階過濾成東方五聲音階
+        function convertToPentatonic(naturalScale) {
+            const pentatonicSteps = ["C", "D", "E", "G", "A"];
+            return naturalScale.filter(note => {
+                const pitchLetter = note.slice(0, -1); 
+                return pentatonicSteps.includes(pitchLetter);
+            });
+        }
+
+        // 當使用者切換音域或樂器時，重新計算音階
+        function updateDynamicScale() {
+            let low = lowNoteSelect.value;
+            let high = highNoteSelect.value;
+            
+            const lowIdx = allWhiteKeys.indexOf(low);
+            const highIdx = allWhiteKeys.indexOf(high);
+            if (lowIdx >= highIdx) {
+                high = allWhiteKeys[Math.min(lowIdx + 4, allWhiteKeys.length - 1)];
+                highNoteSelect.value = high;
+                logMsg("💡 最低音不可大於或等於最高音，已自動調整最高音！", "warn");
+            }
+
+            let fullScale = generateNaturalScale(low, high);
+
+            if (currentInstrument === 'guzheng') {
+                currentScale = convertToPentatonic(fullScale);
+                if (currentScale.length < 3) currentScale = fullScale;
+            } else {
+                currentScale = fullScale;
+            }
+
+            logMsg(`🎵 當前音階已更新為: [${currentScale.join(", ")}] (共 ${currentScale.length} 個音階)`, "info");
+            activeNote = null; 
+        }
+
+        lowNoteSelect.addEventListener('change', updateDynamicScale);
+        highNoteSelect.addEventListener('change', updateDynamicScale);
+
+        // ==========================================
+        // 🔊 音訊路由與多取樣機設定
+        // ==========================================
+        const safeReverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 2500 }).toDestination();
+
+        const tromboneSampler = new Tone.Sampler({
+            urls: { "D3": "trombone-D3.wav" }, 
+            release: 0.5,
+            baseUrl: "./" 
+        }).connect(safeReverb);
+
+        const guzhengSampler = new Tone.Sampler({
+            urls: { "D4": "guzheng1-D4.wav" }, 
+            release: 0.8, 
+            baseUrl: "./" 
+        }).connect(safeReverb);
+
+        const backupSynth = new Tone.PluckSynth({
+            attackNoise: 1.5,
+            dampening: 4000,
+            resonance: 0.95
+        }).connect(safeReverb);
+
+        let activeNote = null;
+        let currentInstrument = 'trombone'; 
+
+        updateDynamicScale();
+
+        function getCurrentSampler() {
+            return currentInstrument === 'trombone' ? tromboneSampler : guzhengSampler;
+        }
+
+        instrumentSelect.addEventListener('change', (e) => {
+            tromboneSampler.releaseAll();
+            guzhengSampler.releaseAll();
+            activeNote = null;
+
+            currentInstrument = e.target.value;
+            
+            if (currentInstrument === 'trombone') {
+                lowNoteSelect.value = "G2";
+                highNoteSelect.value = "A3";
+                positionDisplay.innerText = "左右滑動右手拉管演奏";
+                logMsg("已切換為：長號 (左右拉管)，音域恢復預設 [G2 - A3]", "info");
+            } else {
+                lowNoteSelect.value = "D3";
+                highNoteSelect.value = "A4";
+                positionDisplay.innerText = "用右手在空中撥動琴弦演奏";
+                logMsg("已切換為：古箏 (左右撥弦)，音域恢復預設並套用五聲調式 [D3 - A4]", "info");
+            }
+            updateDynamicScale();
+        });
+
+        testAudioBtn.addEventListener('mousedown', () => {
+            const sampler = getCurrentSampler();
+            const testNote = currentScale[Math.floor(currentScale.length / 2)]; 
+            logMsg(`測試 ${currentInstrument === 'trombone' ? '長號' : '古箏'} 中音 (${testNote})...`, "info");
+            
+            if (sampler.loaded) {
+                sampler.triggerAttack(testNote);
+            } else {
+                backupSynth.triggerAttack(testNote);
+            }
+        });
+        testAudioBtn.addEventListener('mouseup', () => {
+            getCurrentSampler().releaseAll();
+        });
+
+        startBtn.addEventListener('click', async () => {
+            startBtn.disabled = true;
+            logMsg("解鎖 Tone.js 音訊核心...", "info");
+            
+            try {
+                await Tone.start();
+                logMsg("音訊核心已啟動！", "info");
+                testAudioBtn.disabled = false;
+                startBtn.style.display = 'none';
+                positionDisplay.innerText = "舉起右手開始演奏！";
+                camera.start();
+            } catch (err) {
+                logMsg(`啟動失敗: ${err.message}`, "error");
+                startBtn.disabled = false;
+            }
+        });
+
+        // ==========================================
+        // 🎨 畫布視覺繪製
+        // ==========================================
+        function drawInstrument(ctx, noseX, noseY, handX, handY) {
+            ctx.save();
+
+            if (currentInstrument === 'trombone') {
+                const dx = handX - noseX; const dy = handY - noseY;
+                const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
+                ctx.translate(noseX, noseY); ctx.rotate(angle);           
+
+                ctx.beginPath(); ctx.strokeStyle = '#ffbc2e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+                ctx.moveTo(0, 0); ctx.lineTo(-120, 0); ctx.arc(-120, 20, 20, 1.5 * Math.PI, 0.5 * Math.PI, true); ctx.lineTo(100, 40); ctx.bezierCurveTo(130, 40, 140, 10, 150, 10); ctx.lineTo(150, 70); ctx.bezierCurveTo(140, 70, 130, 40, 100, 40); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0;
+                ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
+                let slideStart = Math.max(0, dist - 150); 
+                ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
+                
+                ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
+            } else {
+                const startY = canvasElement.height * 0.5; 
+                const endY = canvasElement.height * 0.9;
+                const stepsCount = currentScale.length - 1;
+                const stepY = (endY - startY) / (stepsCount || 1);
+                
+                ctx.fillStyle = "rgba(101, 33, 33, 0.4)";
+                ctx.fillRect(30, startY - 20, canvasElement.width - 60, (endY - startY) + 40);
+                ctx.strokeStyle = "#8b4513";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(30, startY - 20, canvasElement.width - 60, (endY - startY) + 40);
+
+                for (let i = 0; i <= stepsCount; i++) {
+                    const currentY = startY + (i * stepY);
+                    ctx.beginPath();
+                    
+                    if (handX > 50 && handX < canvasElement.width - 50 && Math.abs(handY - currentY) < stepY / 2) {
+                        ctx.strokeStyle = "#2ecc71";
+                        ctx.lineWidth = 4;
+                        ctx.shadowColor = "#2ecc71";
+                        ctx.shadowBlur = 10;
+                        
+                        ctx.moveTo(30, currentY);
+                        ctx.quadraticCurveTo(handX, currentY + (Math.sin(Date.now() / 20) * 6), canvasElement.width - 30, currentY);
+                    } else {
+                        ctx.strokeStyle = (i % 4 === 0) ? "#27ae60" : "#dcdde1";
+                        ctx.lineWidth = (i % 4 === 0) ? 2.5 : 1.5;
+                        ctx.shadowBlur = 0;
+                        ctx.moveTo(30, currentY);
+                        ctx.lineTo(canvasElement.width - 30, currentY);
+                    }
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ffbc2e";
+                    ctx.font = "bold 13px sans-serif";
+                    ctx.fillText(currentScale[i], canvasElement.width - 80, currentY - 5);
+                }
+
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffbc2e";
+                ctx.lineWidth = 3;
+                ctx.arc(handX, handY, 15, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function updateGraph(smoothPosition) {
+            pitchHistory.push(smoothPosition); pitchHistory.shift();
+            graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+            
+            const topMargin = 10;
+            const stepsCount = currentScale.length - 1;
+            const lineSpacing = (graphCanvas.height - (topMargin * 2)) / (stepsCount || 1); 
+            const leftPadding = 40; 
+
+            graphCtx.font = "10px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
+            for(let i = 0; i <= stepsCount; i++) {
+                let y = topMargin + (i * lineSpacing);
+                graphCtx.fillStyle = '#888'; graphCtx.fillText(currentScale[i], leftPadding / 2, y);
+                graphCtx.beginPath(); graphCtx.strokeStyle = '#333'; graphCtx.lineWidth = 1; graphCtx.moveTo(leftPadding, y); graphCtx.lineTo(graphCanvas.width, y); graphCtx.stroke();
+            }
+
+            graphCtx.beginPath(); graphCtx.strokeStyle = currentInstrument === 'trombone' ? '#ffbc2e' : '#2ecc71'; graphCtx.lineWidth = 3; graphCtx.lineJoin = 'round';
+            let isDrawing = false;
+            for (let i = 0; i < historySize; i++) {
+                let posVal = pitchHistory[i];
+                let x = leftPadding + (i / historySize) * (graphCanvas.width - leftPadding);
+                if (posVal !== null) {
+                    let y = topMargin + (posVal * lineSpacing);
+                    if (!isDrawing) { graphCtx.moveTo(x, y); isDrawing = true; } 
+                    else { graphCtx.lineTo(x, y); }
+                } else { isDrawing = false; }
+            }
+            graphCtx.stroke();
+        }
+
+        const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
+        pose.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
+
+        let engineWarned = false;
+
+        pose.onResults((results) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            try {
+                if (results.poseLandmarks) {
+                    const nose = results.poseLandmarks[0];
+                    const rightHand = results.poseLandmarks[20]; 
+
+                    if (nose.visibility > 0.6 && rightHand.visibility > 0.6) {
+                        const noseX = nose.x * canvasElement.width; const noseY = nose.y * canvasElement.height;
+                        const handX = rightHand.x * canvasElement.width; const handY = rightHand.y * canvasElement.height;
+
+                        drawInstrument(canvasCtx, noseX, noseY, handX, handY);
+
+                        let smoothPosition = 0;
+                        const stepsCount = currentScale.length - 1;
+
+                        if (currentInstrument === 'trombone') {
+                            const distanceNorm = Math.abs(rightHand.x - nose.x);
+                            smoothPosition = (distanceNorm - 0.08) * 15;
+                        } else {
+                            const startY = canvasElement.height * 0.5;
+                            const endY = canvasElement.height * 0.9;
+                            const relativeY = (handY - startY) / (endY - startY);
+                            smoothPosition = relativeY * stepsCount;
+                        }
+
+                        smoothPosition = Math.max(0, Math.min(smoothPosition, stepsCount));
+
+                        let positionIndex = Math.floor(smoothPosition);
+                        const targetNote = currentScale[positionIndex];
+
+                        const isInGuzhengRange = currentInstrument === 'trombone' || (handX > 40 && handX < canvasElement.width - 40);
+
+                        if (targetNote !== activeNote && isInGuzhengRange) {
+                            if (activeNote) {
+                                tromboneSampler.releaseAll();
+                                guzhengSampler.releaseAll();
+                            }
+                            
+                            const activeSampler = getCurrentSampler();
+
+                            if (activeSampler.loaded) {
+                                activeSampler.triggerAttack(targetNote);
+                            } else {
+                                backupSynth.triggerAttack(targetNote);
+                                if (!engineWarned) {
+                                    logMsg(`⚠️ 啟用古典撥弦引擎播放 ${targetNote}。`, "warn");
+                                    engineWarned = true; 
+                                }
+                            }
+                            
+                            activeNote = targetNote;
+                            noteDisplay.innerText = targetNote;
+                            positionDisplay.innerText = `Pos: ${positionIndex + 1}`;
+                        }
+                        updateGraph(smoothPosition);
+                    } else {
+                        if (activeNote) {
+                            tromboneSampler.releaseAll();
+                            guzhengSampler.releaseAll();
+                            activeNote = null;
+                            noteDisplay.innerText = "--";
+                            positionDisplay.innerText = "等待動作...";
+                        }
+                        updateGraph(null);
+                    }
+                }
+            } catch (error) {
+                logMsg(`執行錯誤: ${error.message}`, "error");
+            } finally {
+                canvasCtx.restore();
+            }
+        });
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await pose.send({image: videoElement}); },
+            width: 640, height: 480
+        });
+    </script>
+</body>
+</html>            height: auto;
             max-height: 95vh;
             box-sizing: border-box;
         }
