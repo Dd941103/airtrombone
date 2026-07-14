@@ -313,25 +313,24 @@
         canvasElement.height = 480;
 
         // =========================================================
-        // 🔒 【核心後門密鑰防禦系統】整合位置
+        // 🔒 【核心防禦系統】整合後門密鑰密碼
         // =========================================================
         const urlParams = new URLSearchParams(window.location.search);
         const isDeveloper = urlParams.get('key') === '114113'; // 你的專屬後門密碼
 
         if (isDeveloper) {
-            // 如果你是用 ?key=114113 進來的，主控台會顯示這行
             setTimeout(() => {
                 logMsg("🔓 歡迎開發者！已成功解除所有 F12 與右鍵鎖定。", "info");
             }, 500);
         } else {
-            // ❌ 如果是一般使用者，啟動最高規格地獄防禦
+            // ❌ 一般使用者：啟動最高規格防禦
 
-            // 1. 無限 Debugger 炸彈（開啟主控台立刻被卡死自毀）
+            // 1. 無限 Debugger 自毀暫停炸彈
             setInterval(function () {
                 (function () {}["constructor"]("debugger")());
             }, 100);
 
-            // 2. 右鍵強制鎖死（包含影片、畫布、按鈕通通鎖死，並阻止冒泡）
+            // 2. 右鍵強制鎖死（包含影片、畫布通通攔截，阻止事件冒泡）
             const disableRightClick = function(e) {
                 e.preventDefault();
                 e.stopPropagation(); 
@@ -339,20 +338,34 @@
             };
             document.oncontextmenu = disableRightClick;
             window.oncontextmenu = disableRightClick;
-            document.addEventListener('contextmenu', disableRightClick, true); // 捕獲階段直接硬核攔截
+            document.addEventListener('contextmenu', disableRightClick, true);
 
-            // 3. 鍵盤快捷鍵防禦（屏蔽 F12、Ctrl/Cmd+Shift+I/J/C 及 Ctrl/Cmd+U 原始碼）
-            document.addEventListener('keydown', function (e) {
+            // 3. 鍵盤快捷鍵極限防禦（完美精準狙擊 Mac 的 Cmd + Option + I）
+            const preventDevTools = function (e) {
                 const isF12 = e.key === 'F12' || e.keyCode === 123;
-                const isInspectCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73 || e.key === 'J' || e.key === 'j' || e.keyCode === 74 || e.key === 'C' || e.key === 'c' || e.keyCode === 67);
+                
+                // 檢查是否按下 I, J, C 鍵
+                const isKeys = e.key === 'I' || e.key === 'i' || e.keyCode === 73 || 
+                              e.key === 'J' || e.key === 'j' || e.keyCode === 74 || 
+                              e.key === 'C' || e.key === 'c' || e.keyCode === 67;
+                
+                // 鎖定 Ctrl+Shift、Cmd+Shift、以及 Mac 的 Cmd+Option 組合鍵
+                const isInspectCombo = (e.ctrlKey || e.metaKey) && (e.shiftKey || e.altKey) && isKeys;
+                
+                // 鎖定 Ctrl/Cmd + U 檢視原始碼
                 const isSourceCombo = (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.keyCode === 85);
 
                 if (isF12 || isInspectCombo || isSourceCombo) {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.stopImmediatePropagation(); // 強制中斷瀏覽器鏈結，封鎖事件
                     return false;
                 }
-            }, true);
+            };
+
+            // 雙重保險：同時監聽 keydown 與 keyup 的捕獲階段
+            document.addEventListener('keydown', preventDevTools, true);
+            document.addEventListener('keyup', preventDevTools, true);
         }
 
         // ==========================================
@@ -526,20 +539,20 @@
         }
 
         // ==========================================
-        // 📱 手機端與電腦端的事件監聽
+        // 📱 事件監聽（開關監控區與空白鍵點舌）
         // ==========================================
         
-        // 1. 手機點選標題「Air Studio」：開啟或關閉監控面板
+        // 1. 點選標題「Air Studio」：切換監控面板
         appTitle.addEventListener('click', () => {
             debugLog.classList.toggle('hidden');
         });
 
-        // 2. 直接點擊監控面板本體：立即隱藏它（最順手）
+        // 2. 點擊監控面板本體：立即隱藏它
         debugLog.addEventListener('click', () => {
             debugLog.classList.add('hidden');
         });
 
-        // 3. 鍵盤 D 鍵切換偵錯，Space 點舌
+        // 3. 鍵盤 D 鍵切換偵錯，Space 點舌（此監聽即使鎖定了快捷鍵也依然有效）
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'd') {
