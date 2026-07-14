@@ -313,36 +313,47 @@
         canvasElement.height = 480;
 
         // =========================================================
-        // 🛡️ 雙重鎖定：地獄級防禦與無限 Debugger 炸彈
+        // 🔒 【核心後門密鑰防禦系統】整合位置
         // =========================================================
-        
-        // 1. 無限 Debugger（若開啟開發者工具，JS 馬上陷入無限暫停，防 F12 破解代碼）
-        setInterval(function () {
-            (function () {}["constructor"]("debugger")());
-        }, 100);
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDeveloper = urlParams.get('key') === '114113'; // 你的專屬後門密碼
 
-        // 2. 右鍵強制鎖定（包含影片、畫布、按鈕通通鎖死，並阻止冒泡）
-        function disableRightClick(e) {
-            e.preventDefault();
-            e.stopPropagation(); 
-            return false;
-        }
-        document.oncontextmenu = disableRightClick;
-        window.oncontextmenu = disableRightClick;
-        document.addEventListener('contextmenu', disableRightClick, true); // 捕獲階段直接攔截
+        if (isDeveloper) {
+            // 如果你是用 ?key=114113 進來的，主控台會顯示這行
+            setTimeout(() => {
+                logMsg("🔓 歡迎開發者！已成功解除所有 F12 與右鍵鎖定。", "info");
+            }, 500);
+        } else {
+            // ❌ 如果是一般使用者，啟動最高規格地獄防禦
 
-        // 3. 鍵盤防禦（屏蔽 F12、Ctrl/Cmd+Shift+I/J/C 及 Ctrl/Cmd+U 檢視原始碼）
-        document.addEventListener('keydown', function (e) {
-            const isF12 = e.key === 'F12' || e.keyCode === 123;
-            const isInspectCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73 || e.key === 'J' || e.key === 'j' || e.keyCode === 74 || e.key === 'C' || e.key === 'c' || e.keyCode === 67);
-            const isSourceCombo = (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.keyCode === 85);
+            // 1. 無限 Debugger 炸彈（開啟主控台立刻被卡死自毀）
+            setInterval(function () {
+                (function () {}["constructor"]("debugger")());
+            }, 100);
 
-            if (isF12 || isInspectCombo || isSourceCombo) {
+            // 2. 右鍵強制鎖死（包含影片、畫布、按鈕通通鎖死，並阻止冒泡）
+            const disableRightClick = function(e) {
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopPropagation(); 
                 return false;
-            }
-        }, true); // 捕獲階段攔截，最優先處理
+            };
+            document.oncontextmenu = disableRightClick;
+            window.oncontextmenu = disableRightClick;
+            document.addEventListener('contextmenu', disableRightClick, true); // 捕獲階段直接硬核攔截
+
+            // 3. 鍵盤快捷鍵防禦（屏蔽 F12、Ctrl/Cmd+Shift+I/J/C 及 Ctrl/Cmd+U 原始碼）
+            document.addEventListener('keydown', function (e) {
+                const isF12 = e.key === 'F12' || e.keyCode === 123;
+                const isInspectCombo = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73 || e.key === 'J' || e.key === 'j' || e.keyCode === 74 || e.key === 'C' || e.key === 'c' || e.keyCode === 67);
+                const isSourceCombo = (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U' || e.keyCode === 85);
+
+                if (isF12 || isInspectCombo || isSourceCombo) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+        }
 
         // ==========================================
         // 🎼 動態音階生成演算法
@@ -528,7 +539,7 @@
             debugLog.classList.add('hidden');
         });
 
-        // 3. 鍵盤 D 鍵切換偵錯，Space 點舌 (且此綁定不可被 debug 攔截)
+        // 3. 鍵盤 D 鍵切換偵錯，Space 點舌
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'd') {
