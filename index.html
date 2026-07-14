@@ -3,17 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Trombone Studio (Full Trombone Timbre)</title>
+    <title>Air Trombone Studio (Responsive Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #1a1a1a; color: #eee; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .app-container { display: flex; gap: 30px; background: #2b2b2b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .side-panel { display: flex; flex-direction: column; gap: 15px; width: 320px; }
-        h1 { margin: 0; font-size: 24px; color: #ffbc2e; }
+        /* 基礎全螢幕自適應設定 */
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background-color: #1a1a1a; 
+            color: #eee; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* 容器改成彈性最大寬度，避免電腦上超出螢幕，並在手機上自動調整 */
+        .app-container { 
+            display: flex; 
+            flex-direction: row; /* 電腦版左右排版 */
+            gap: 20px; 
+            background: #2b2b2b; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            max-width: 1024px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .side-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            width: 320px; 
+            flex-shrink: 0; /* 避免在小螢幕被壓縮 */
+        }
+
+        h1 { margin: 0; font-size: 24px; color: #ffbc2e; text-align: center; }
         
         button { padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
         button:hover { background-color: #e5a822; }
@@ -26,15 +59,58 @@
         #noteDisplay { font-size: 32px; font-weight: bold; color: #ffbc2e; margin-top: 5px; }
         #positionDisplay { font-size: 14px; color: #888; }
 
-        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 200px; }
+        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 150px; }
         
-        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 12px; }
         .log-info { color: #2ecc71; margin-bottom: 4px; }
         .log-warn { color: #f1c40f; margin-bottom: 4px; }
         .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
 
-        #canvas-container { position: relative; width: 640px; height: 480px; border: 2px solid #111; border-radius: 8px; overflow: hidden; background: #000; }
-        video, #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        /* 視訊容器改為響應式 4:3 比例 */
+        #canvas-container { 
+            position: relative; 
+            flex-grow: 1;
+            width: 100%;
+            max-width: 640px; 
+            aspect-ratio: 4 / 3; /* 自動鎖定 4:3 */
+            border: 2px solid #111; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            background: #000; 
+        }
+
+        video, #output_canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            transform: scaleX(-1); 
+            object-fit: cover; /* 填滿容器並保持比例 */
+        }
+
+        /* ==========================================
+           📱 針對手機/直向螢幕（如 iOS / Android）的優化 
+           ========================================== */
+        @media (max-width: 850px) {
+            body {
+                align-items: flex-start; /* 手機版從頂部開始排 */
+                padding: 10px;
+            }
+            .app-container { 
+                flex-direction: column-reverse; /* 手機版將視訊畫面放到最上方，控制台放下方，方便看畫面 */
+                padding: 15px;
+                gap: 15px;
+            }
+            .side-panel { 
+                width: 100%; /* 手機上寬度撐滿 */
+            }
+            #canvas-container {
+                max-width: 100%; /* 視訊畫面滿版 */
+            }
+            h1 { font-size: 20px; }
+            #graph_canvas { height: 120px; } /* 縮小一點折線圖高度 */
+        }
     </style>
 </head>
 <body>
@@ -50,10 +126,10 @@
                 <div id="positionDisplay">等待啟動...</div>
             </div>
 
-            <canvas id="graph_canvas" width="320" height="200"></canvas>
+            <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 全音域長號取樣版已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 響應式系統已就緒。</div>
             </div>
         </div>
 
@@ -85,6 +161,7 @@
             console.log(`[${type.toUpperCase()}] ${msg}`);
         }
 
+        // 畫布內部邏輯渲染解析度保持 640x480（這不會影響 CSS 縮放效果）
         canvasElement.width = 640;
         canvasElement.height = 480;
 
@@ -93,15 +170,12 @@
         // ==========================================
         const safeReverb = new Tone.Freeverb({ roomSize: 0.6, dampening: 3000 }).toDestination();
 
-        // 1. 真實取樣機 (接往 Freeverb)
-        // Tone.js 會自動以 D3 為基準，幫其他所有音高做高品質的升降音（變調）
         const sampler = new Tone.Sampler({
             urls: { "D3": "trombone-D3.wav" }, 
             release: 0.5,
             baseUrl: "./" 
         }).connect(safeReverb);
 
-        // 2. 備用合成引擎 (僅在 wav 尚未載入完成時做為緩衝)
         const backupSynth = new Tone.FMSynth({
             harmonicity: 1.5,
             modulationIndex: 2,
@@ -178,7 +252,7 @@
         function updateGraph(smoothPosition) {
             pitchHistory.push(smoothPosition); pitchHistory.shift();
             graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
-            const topMargin = 15; const lineSpacing = 20; const leftPadding = 40; 
+            const topMargin = 15; const lineSpacing = 15; const leftPadding = 40; 
 
             graphCtx.font = "12px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
             for(let i = 0; i <= 8; i++) {
@@ -235,7 +309,6 @@
                                 backupSynth.triggerRelease();
                             }
                             
-                            // 【關鍵修正】只要 sampler（長號音檔）成功載入，所有的音高都直接使用長號取樣播放！
                             if (sampler.loaded) {
                                 sampler.triggerAttack(targetNote);
                                 if (engineWarned) {
@@ -243,7 +316,6 @@
                                     engineWarned = false; 
                                 }
                             } else {
-                                // 只有在音檔載入完成前，才使用合成器當作過渡
                                 backupSynth.triggerAttack(targetNote);
                                 if (!engineWarned) {
                                     logMsg("⚠️ 正在載入長號取樣音檔，暫時啟用合成引擎...", "warn");
