@@ -2,15 +2,15 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Trombone Studio (Responsive Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Air Trombone Studio (Responsive & Landscape Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     
     <style>
-        /* 基礎全螢幕自適應設定 */
+        /* 基礎全螢幕設定 */
         body { 
             margin: 0; 
             display: flex; 
@@ -22,12 +22,13 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             padding: 10px;
             box-sizing: border-box;
+            overflow: hidden; /* 防止橫向時出現多餘滾動條 */
         }
 
-        /* 容器改成彈性最大寬度，避免電腦上超出螢幕，並在手機上自動調整 */
+        /* 主容器：電腦預設左右排版 */
         .app-container { 
             display: flex; 
-            flex-direction: row; /* 電腦版左右排版 */
+            flex-direction: row; 
             gap: 20px; 
             background: #2b2b2b; 
             padding: 20px; 
@@ -35,44 +36,47 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
             max-width: 1024px;
             width: 100%;
+            height: auto;
+            max-height: 95vh;
             box-sizing: border-box;
         }
 
         .side-panel { 
             display: flex; 
             flex-direction: column; 
-            gap: 15px; 
-            width: 320px; 
-            flex-shrink: 0; /* 避免在小螢幕被壓縮 */
+            gap: 12px; 
+            width: 300px; 
+            flex-shrink: 0; 
+            justify-content: center;
         }
 
-        h1 { margin: 0; font-size: 24px; color: #ffbc2e; text-align: center; }
+        h1 { margin: 0; font-size: 22px; color: #ffbc2e; text-align: center; }
         
-        button { padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
+        button { padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
         button:hover { background-color: #e5a822; }
         button:disabled { background-color: #666; color: #aaa; cursor: not-allowed; }
         
-        .test-btn { background-color: #3498db; color: #fff; padding: 10px; font-size: 14px; margin-top: -5px; }
+        .test-btn { background-color: #3498db; color: #fff; padding: 8px; font-size: 13px; margin-top: -5px; }
         .test-btn:hover { background-color: #2980b9; }
 
-        .status-box { background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #444; text-align: center; }
-        #noteDisplay { font-size: 32px; font-weight: bold; color: #ffbc2e; margin-top: 5px; }
-        #positionDisplay { font-size: 14px; color: #888; }
+        .status-box { background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; text-align: center; }
+        #noteDisplay { font-size: 28px; font-weight: bold; color: #ffbc2e; margin-top: 3px; }
+        #positionDisplay { font-size: 13px; color: #888; }
 
-        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 150px; }
+        #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 120px; }
         
-        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .debug-panel { background: #000; border: 1px solid #333; border-radius: 6px; padding: 8px; height: 80px; overflow-y: auto; font-family: monospace; font-size: 11px; }
         .log-info { color: #2ecc71; margin-bottom: 4px; }
         .log-warn { color: #f1c40f; margin-bottom: 4px; }
         .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
 
-        /* 視訊容器改為響應式 4:3 比例 */
+        /* 視訊容器 */
         #canvas-container { 
             position: relative; 
             flex-grow: 1;
             width: 100%;
             max-width: 640px; 
-            aspect-ratio: 4 / 3; /* 自動鎖定 4:3 */
+            aspect-ratio: 4 / 3; 
             border: 2px solid #111; 
             border-radius: 8px; 
             overflow: hidden; 
@@ -86,30 +90,63 @@
             width: 100%; 
             height: 100%; 
             transform: scaleX(-1); 
-            object-fit: cover; /* 填滿容器並保持比例 */
+            object-fit: cover; 
         }
 
         /* ==========================================
-           📱 針對手機/直向螢幕（如 iOS / Android）的優化 
+           📱 【手機直向模式】 (寬度小且高大於寬)
            ========================================== */
-        @media (max-width: 850px) {
+        @media (max-width: 850px) and (orientation: portrait) {
             body {
-                align-items: flex-start; /* 手機版從頂部開始排 */
-                padding: 10px;
+                align-items: flex-start;
+                overflow-y: auto; /* 直向允許上下滑動 */
             }
             .app-container { 
-                flex-direction: column-reverse; /* 手機版將視訊畫面放到最上方，控制台放下方，方便看畫面 */
-                padding: 15px;
-                gap: 15px;
+                flex-direction: column-reverse; /* 視訊在上面，控制台在下面 */
+                padding: 12px;
+                gap: 12px;
+                max-height: none;
             }
             .side-panel { 
-                width: 100%; /* 手機上寬度撐滿 */
+                width: 100%; 
             }
             #canvas-container {
-                max-width: 100%; /* 視訊畫面滿版 */
+                max-width: 100%; 
             }
-            h1 { font-size: 20px; }
-            #graph_canvas { height: 120px; } /* 縮小一點折線圖高度 */
+        }
+
+        /* ==========================================
+           📱 【手機橫向特別優化】 (寬大於高，且高度較矮)
+           ========================================== */
+        @media (max-height: 500px) and (orientation: landscape) {
+            body {
+                padding: 5px;
+                overflow: hidden; /* 確保不出現滾動條 */
+            }
+            .app-container {
+                flex-direction: row; /* 保持左右並排 */
+                padding: 10px;
+                gap: 15px;
+                height: 96vh; /* 高度剛好撐滿螢幕 */
+                border-radius: 8px;
+            }
+            .side-panel {
+                width: 220px; /* 橫向時窄化左邊控制台 */
+                gap: 5px;
+            }
+            h1 { font-size: 16px; }
+            button { padding: 8px; font-size: 13px; }
+            .test-btn { padding: 5px; font-size: 11px; }
+            .status-box { padding: 4px; }
+            #noteDisplay { font-size: 22px; }
+            #positionDisplay { font-size: 11px; }
+            #graph_canvas { height: 75px; } /* 縮小折線圖，完美塞進窄螢幕 */
+            .debug-panel { height: 50px; font-size: 10px; }
+            
+            #canvas-container {
+                max-height: 100%; /* 視訊高度不超出容器 */
+                aspect-ratio: 4 / 3;
+            }
         }
     </style>
 </head>
@@ -117,7 +154,7 @@
 
     <div class="app-container">
         <div class="side-panel">
-            <h1>🎺 Air Trombone Studio</h1>
+            <h1>🎺 Air Trombone</h1>
             <button id="startBtn">啟動系統 (Start)</button>
             <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
             
@@ -129,7 +166,7 @@
             <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 響應式系統已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 雙向響應系統已就緒。</div>
             </div>
         </div>
 
@@ -161,7 +198,6 @@
             console.log(`[${type.toUpperCase()}] ${msg}`);
         }
 
-        // 畫布內部邏輯渲染解析度保持 640x480（這不會影響 CSS 縮放效果）
         canvasElement.width = 640;
         canvasElement.height = 480;
 
@@ -217,7 +253,7 @@
                 logMsg("音訊核心已啟動，主輸出通道開啟！", "info");
                 
                 testAudioBtn.disabled = false;
-                logMsg("👉 請點擊上方的 [🔊 強制測試發聲] 確認是否為長號聲！", "warn");
+                logMsg("👉 請點擊上方 [🔊 強制測試發聲] 確認音色！", "warn");
                 
                 startBtn.style.display = 'none';
                 positionDisplay.innerText = "舉起右手開始演奏！";
@@ -252,9 +288,13 @@
         function updateGraph(smoothPosition) {
             pitchHistory.push(smoothPosition); pitchHistory.shift();
             graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
-            const topMargin = 15; const lineSpacing = 15; const leftPadding = 40; 
+            
+            // 根據 canvas 當前實際高度來動態調整線距，確保橫向縮小時不穿幫
+            const topMargin = 10;
+            const lineSpacing = (graphCanvas.height - (topMargin * 2)) / 8; 
+            const leftPadding = 40; 
 
-            graphCtx.font = "12px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
+            graphCtx.font = "10px sans-serif"; graphCtx.textAlign = "center"; graphCtx.textBaseline = "middle";
             for(let i = 0; i <= 8; i++) {
                 let y = topMargin + (i * lineSpacing);
                 graphCtx.fillStyle = '#888'; graphCtx.fillText(trombonePositions[i], leftPadding / 2, y);
@@ -318,7 +358,7 @@
                             } else {
                                 backupSynth.triggerAttack(targetNote);
                                 if (!engineWarned) {
-                                    logMsg("⚠️ 正在載入長號取樣音檔，暫時啟用合成引擎...", "warn");
+                                    logMsg("⚠️ 正在載入長號取樣音檔...", "warn");
                                     engineWarned = true; 
                                 }
                             }
