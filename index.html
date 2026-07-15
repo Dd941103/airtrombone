@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Air Instrument Studio (Ultimate Mobile Pro)</title>
+    <title>Air Instrument Studio (Custom Backing Edition)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
@@ -63,11 +63,18 @@
         
         .select-box { display: flex; flex-direction: column; gap: 5px; }
         .select-box label { font-size: 11px; color: #aaa; font-weight: bold; }
-        select {
+        select, input[type="file"] {
             padding: 10px; font-size: 14px; background-color: #3a3a3a; color: #fff;
             border: 1px solid #555; border-radius: 6px; cursor: pointer; outline: none; font-weight: bold;
+            box-sizing: border-box; width: 100%;
         }
         select:focus { border-color: #ffbc2e; }
+
+        /* 檔案上傳外觀微調 */
+        input[type="file"]::file-selector-button {
+            background-color: #ffbc2e; border: none; border-radius: 4px; color: #111;
+            padding: 4px 8px; font-weight: bold; cursor: pointer; margin-right: 8px;
+        }
 
         .range-container { display: flex; gap: 10px; }
         .range-container .select-box { flex: 1; }
@@ -79,8 +86,8 @@
         .test-btn { background-color: #3498db; color: #fff; padding: 8px; font-size: 13px; margin-top: -5px; }
         .test-btn:hover { background-color: #2980b9; }
         
-        .metro-btn { background-color: #9b59b6; color: #fff; margin-top: -2px; padding: 10px; font-size: 14px; }
-        .metro-btn.playing { background-color: #e74c3c; }
+        .audio-btn { background-color: #9b59b6; color: #fff; margin-top: -2px; padding: 10px; font-size: 14px; }
+        .audio-btn.playing { background-color: #e74c3c; }
 
         .status-box { background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; text-align: center; }
         #noteDisplay { font-size: 28px; font-weight: bold; color: #ffbc2e; margin-top: 3px; }
@@ -139,17 +146,15 @@
             <div class="select-box">
                 <label for="instrumentSelect">選擇樂器</label>
                 <select id="instrumentSelect">
-                    <option value="trombone">長號 Trombone (左右連續拉管)</option>
-                    <option value="guzheng">古箏 Guzheng (右撥弦 ✕ 左壓弦)</option>
+                    <option value="trombone">長號 Trombone (前後拉管)</option>
+                    <option value="guzheng">古箏 Guzheng (橫向撥弦)</option>
                 </select>
             </div>
 
+            <!-- 【新增】自訂伴奏上傳區 -->
             <div class="select-box">
-                <label for="playModeSelect">演奏模式</label>
-                <select id="playModeSelect">
-                    <option value="quantize">🎯 開啟吸附 (精準卡音格)</option>
-                    <option value="portamento">🎻 開啟滑音 / 左手壓音 (真實樂器動態)</option>
-                </select>
+                <label for="audioUpload">🎵 載入自訂背景伴奏 (MP3/WAV)</label>
+                <input type="file" id="audioUpload" accept="audio/*">
             </div>
 
             <div class="range-container">
@@ -165,7 +170,9 @@
 
             <button id="startBtn">啟動系統 (Start)</button>
             <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
-            <button id="metroBtn" class="metro-btn" disabled>⏱️ 開啟經典節拍器</button>
+            
+            <!-- 伴奏控制按鈕 -->
+            <button id="backingBtn" class="audio-btn" disabled>🥁 播放自訂伴奏</button>
             
             <div class="status-box">
                 <div id="noteDisplay">--</div>
@@ -175,7 +182,7 @@
             <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 專業級演奏核心已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 系統就緒。上傳伴奏音檔即可隨時雙開演奏！</div>
             </div>
         </div>
 
@@ -200,12 +207,12 @@
         const graphCtx = graphCanvas.getContext('2d');
         const startBtn = document.getElementById('startBtn');
         const testAudioBtn = document.getElementById('testAudioBtn');
-        const metroBtn = document.getElementById('metroBtn');
+        const backingBtn = document.getElementById('backingBtn');
+        const audioUpload = document.getElementById('audioUpload');
         const noteDisplay = document.getElementById('noteDisplay');
         const positionDisplay = document.getElementById('positionDisplay');
         const debugLog = document.getElementById('debugLog');
         const instrumentSelect = document.getElementById('instrumentSelect');
-        const playModeSelect = document.getElementById('playModeSelect');
         const lowNoteSelect = document.getElementById('lowNoteSelect');
         const highNoteSelect = document.getElementById('highNoteSelect');
         const tongueBtn = document.getElementById('tongueBtn');
@@ -252,7 +259,7 @@
         }
 
         // ==========================================
-        // 🎼 動態音階生成與頻率轉換工具
+        // 🎼 動態音階生成
         // ==========================================
         const allWhiteKeys = [
             "C2", "D2", "E2", "F2", "G2", "A2", "B2",
@@ -302,7 +309,7 @@
         // ==========================================
         // 🔊 音訊路由與取樣機設定
         // ==========================================
-        const safeReverb = new Tone.Freeverb({ roomSize: 0.65, dampening: 3000 }).toDestination();
+        const safeReverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 2500 }).toDestination();
 
         const tromboneSampler = new Tone.Sampler({
             urls: { "D3": "trombone-D3.wav" }, release: 0.5, baseUrl: "./" 
@@ -312,75 +319,72 @@
             urls: { "D4": "guzheng1-D4.wav" }, release: 0.8, baseUrl: "./" 
         }).connect(safeReverb);
 
-        // 優化備用引擎為支援無縫頻率滑音的 Synth
-        const backupSynth = new Tone.Synth({
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 0.3 }
+        const backupSynth = new Tone.PluckSynth({
+            attackNoise: 1.5, dampening: 4000, resonance: 0.95
         }).connect(safeReverb);
 
         let activeNote = null;
         let currentInstrument = 'trombone'; 
-        let currentPlayMode = 'quantize'; 
 
         updateDynamicScale();
 
         function getCurrentSampler() { return currentInstrument === 'trombone' ? tromboneSampler : guzhengSampler; }
 
         instrumentSelect.addEventListener('change', (e) => {
-            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease(); activeNote = null;
+            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); activeNote = null;
             currentInstrument = e.target.value;
             if (currentInstrument === 'trombone') {
                 lowNoteSelect.value = "G2"; highNoteSelect.value = "A3";
                 positionDisplay.innerText = "左右滑動右手拉管演奏";
             } else {
                 lowNoteSelect.value = "D3"; highNoteSelect.value = "A4";
-                positionDisplay.innerText = "右撥弦 ✕ 左手上下壓弦揉弦";
+                positionDisplay.innerText = "用右手在空中撥動琴弦演奏";
             }
             updateDynamicScale();
         });
 
-        playModeSelect.addEventListener('change', (e) => {
-            currentPlayMode = e.target.value;
-            if (currentPlayMode === 'portamento') {
-                logMsg("🎻 真實滑音/左手壓音模式已開啟！還原樂器真實拉管動態。", "warn");
-            } else {
-                // 回歸點對點吸附
-                if (currentInstrument === 'trombone') { tromboneSampler.releaseAll(); backupSynth.triggerRelease(); }
-                logMsg("🎯 吸附模式已開啟！音高精準落於音格內。", "info");
+        // ==========================================
+        // 🥁 【改進】自訂背景伴奏播放控制引擎
+        // ==========================================
+        let backingPlayer = null;
+        let isBackingPlaying = false;
+
+        audioUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 如果原本有載入過舊的伴奏，先把它釋放掉
+            if (backingPlayer) {
+                backingPlayer.stop();
+                backingPlayer.dispose();
             }
-            activeNote = null;
+
+            // 將使用者選擇的檔案轉成內部 URL 並載入 Tone.Player
+            const fileURL = URL.createObjectURL(file);
+            backingPlayer = new Tone.Player(fileURL, () => {
+                logMsg(`🎉 成功載入自訂伴奏音檔：${file.name}！已解鎖播放按鈕。`, "info");
+                if (!startBtn.disabled) {
+                    backingBtn.disabled = false;
+                }
+            }).toDestination();
+            backingPlayer.loop = true; // 預設自動循環播放
         });
 
-        // ==========================================
-        // ⏱️ 【改進】純粹、經典且穩定的電子節拍器
-        // ==========================================
-        let isMetroPlaying = false;
-        let metroLoop = null;
-        const metroClick = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }).toDestination();
-
-        function initMetronome() {
-            Tone.Transport.bpm.value = 90; // 預設 90 BPM 的穩定練習速度
-            let beatCount = 0;
-            metroLoop = new Tone.Loop((time) => {
-                // 每四拍一個重拍
-                if (beatCount % 4 === 0) {
-                    metroClick.triggerAttackRelease("C6", "16n", time, 1.0); // 重拍高音
-                } else {
-                    metroClick.triggerAttackRelease("G5", "16n", time, 0.4); // 次拍低音
-                }
-                beatCount++;
-            }, "4n");
-        }
-
-        metroBtn.addEventListener('click', () => {
-            if (!metroLoop) initMetronome();
-            if (!isMetroPlaying) {
-                Tone.Transport.start(); metroLoop.start(0); isMetroPlaying = true;
-                metroBtn.innerText = "⏱️ 關閉經典節拍器"; metroBtn.classList.add('playing');
-                logMsg("⏱️ 節拍器已啟動（速度: 90 BPM）。自備伴奏提示：可在資料夾內放入 backing.mp3 手動雙開播放。", "info");
+        backingBtn.addEventListener('click', () => {
+            if (!backingPlayer) return;
+            
+            if (!isBackingPlaying) {
+                backingPlayer.start();
+                isBackingPlaying = true;
+                backingBtn.innerText = "🛑 停止背景伴奏";
+                backingBtn.classList.add('playing');
+                logMsg("🥁 自訂背景伴奏開始播放！", "info");
             } else {
-                metroLoop.stop(); isMetroPlaying = false;
-                metroBtn.innerText = "⏱️ 開啟經典節拍器"; metroBtn.classList.remove('playing');
+                backingPlayer.stop();
+                isBackingPlaying = false;
+                backingBtn.innerText = "🥁 播放自訂伴奏";
+                backingBtn.classList.remove('playing');
+                logMsg("🛑 伴奏已停止。", "info");
             }
         });
 
@@ -390,7 +394,8 @@
             startBtn.disabled = true; logMsg("解鎖 Tone.js 音訊核心...", "info");
             try {
                 await Tone.start(); logMsg("音訊核心已啟動！", "info");
-                testAudioBtn.disabled = false; metroBtn.disabled = false;
+                testAudioBtn.disabled = false; 
+                if (backingPlayer) backingBtn.disabled = false; // 如果有先上傳好檔案就直接解鎖
                 startBtn.style.display = 'none'; positionDisplay.innerText = "舉起右手開始演奏！"; camera.start();
             } catch (err) { logMsg(`啟動失敗: ${err.message}`, "error"); startBtn.disabled = false; }
         });
@@ -410,7 +415,7 @@
             }
         }
 
-        // 介面觸控監聽
+        // 介面觸控/按鍵事件
         appTitle.addEventListener('click', () => { debugLog.classList.toggle('hidden'); });
         debugLog.addEventListener('click', () => { debugLog.classList.add('hidden'); });
 
@@ -425,43 +430,13 @@
         tongueBtn.addEventListener('mousedown', () => { if (activeNote) triggerPluck(activeNote); });
 
         // ==========================================
-        // 🎨 【改進】UI 琴格分隔線與右側專屬繪製區
+        // 🎨 畫布視覺繪製（完全移除把位虚線，回歸最乾淨畫面）
         // ==========================================
-        function drawInstrument(ctx, noseX, noseY, handX, handY, leftHandY, currentSmoothPos) {
+        function drawInstrument(ctx, noseX, noseY, handX, handY) {
             ctx.save();
-            const stepsCount = currentScale.length - 1;
 
             if (currentInstrument === 'trombone') {
-                // 👁️ 【改進】將琴格畫在右側專屬半透明遮罩區，不干擾人臉
-                const startGridX = canvasElement.width * 0.45;
-                const endGridX = canvasElement.width - 15;
-                const gridWidth = (endGridX - startGridX) / (stepsCount || 1);
-                const currentHandPosIndex = Math.floor(currentSmoothPos);
-
-                // 繪製右側背景黑色遮罩
-                ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-                ctx.fillRect(startGridX, 20, endGridX - startGridX, canvasElement.height - 40);
-
-                for (let i = 0; i <= stepsCount; i++) {
-                    const lineX = startGridX + (i * gridWidth);
-                    
-                    if (i === currentHandPosIndex && handX > startGridX) {
-                        ctx.fillStyle = "rgba(255, 188, 46, 0.25)";
-                        ctx.fillRect(lineX, 20, gridWidth, canvasElement.height - 40);
-                        
-                        // 實時標記音名與把位
-                        ctx.fillStyle = "#ffbc2e";
-                        ctx.font = "bold 15px sans-serif";
-                        ctx.fillText(`Pos ${i+1} (${currentScale[i]})`, lineX + 8, 45);
-                    }
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = i === currentHandPosIndex ? "rgba(255,188,46,0.8)" : "rgba(255,255,255,0.3)";
-                    ctx.lineWidth = i === currentHandPosIndex ? 3 : 1;
-                    ctx.moveTo(lineX, 20); ctx.lineTo(lineX, canvasElement.height - 20); ctx.stroke();
-                }
-
-                // 長號拉管視覺
+                // 長號拉管本體
                 const dx = handX - noseX; const dy = handY - noseY;
                 const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
                 ctx.translate(noseX, noseY); ctx.rotate(angle);           
@@ -471,9 +446,11 @@
                 ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0; ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
                 ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
                 let slideStart = Math.max(0, dist - 150); ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
+                ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
             } else {
-                // 古箏琴弦視覺
+                // 古箏琴弦本體視覺
                 const startY = canvasElement.height * 0.5; const endY = canvasElement.height * 0.9;
+                const stepsCount = currentScale.length - 1;
                 const stepY = (endY - startY) / (stepsCount || 1);
                 
                 ctx.fillStyle = "rgba(101, 33, 33, 0.4)"; ctx.fillRect(30, startY - 20, canvasElement.width - 60, (endY - startY) + 40);
@@ -491,17 +468,7 @@
                     ctx.stroke();
                     ctx.fillStyle = "#ffbc2e"; ctx.font = "bold 13px sans-serif"; ctx.fillText(currentScale[i], canvasElement.width - 80, currentY - 5);
                 }
-                
-                // 畫出右手發聲標記圈
                 ctx.beginPath(); ctx.strokeStyle = "#ffbc2e"; ctx.lineWidth = 3; ctx.arc(handX, handY, 15, 0, 2 * Math.PI); ctx.stroke();
-
-                // 【新增】如果開啟壓音模式，畫出左手揉弦的感應指示器
-                if (currentPlayMode === 'portamento' && leftHandY !== null) {
-                    ctx.beginPath(); ctx.strokeStyle = "#3498db"; ctx.lineWidth = 2;
-                    ctx.arc(60, leftHandY, 20, 0, 2 * Math.PI); ctx.stroke();
-                    ctx.fillStyle = "#3498db"; ctx.font = "11px sans-serif";
-                    ctx.fillText("左手壓弦中", 45, leftHandY - 25);
-                }
             }
             ctx.restore();
         }
@@ -541,11 +508,7 @@
 
             try {
                 if (results.poseLandmarks) {
-                    const nose = results.poseLandmarks[0]; 
-                    const rightHand = results.poseLandmarks[20]; 
-                    const leftHand = results.poseLandmarks[19]; // 抓取左手，用來做古箏壓音
-
-                    let leftHandY = (leftHand && leftHand.visibility > 0.5) ? leftHand.y * canvasElement.height : null;
+                    const nose = results.poseLandmarks[0]; const rightHand = results.poseLandmarks[20]; 
 
                     if (nose.visibility > 0.6 && rightHand.visibility > 0.6) {
                         const noseX = nose.x * canvasElement.width; const noseY = nose.y * canvasElement.height;
@@ -563,51 +526,15 @@
                         }
 
                         smoothPosition = Math.max(0, Math.min(smoothPosition, stepsCount));
-                        drawInstrument(canvasCtx, noseX, noseY, handX, handY, leftHandY, smoothPosition);
+                        drawInstrument(canvasCtx, noseX, noseY, handX, handY);
 
                         let positionIndex = Math.floor(smoothPosition);
                         let targetNote = currentScale[positionIndex];
 
-                        // ==========================================
-                        // 🎻 【改進】真・滑音與壓音演算核心
-                        // ==========================================
-                        if (currentPlayMode === 'portamento') {
-                            if (currentInstrument === 'trombone') {
-                                // 【真・長號拉管滑音】打破音格限制，將全域音高轉成無級連續頻率
-                                const lowFreq = Tone.Frequency(currentScale[0]).toFrequency();
-                                const highFreq = Tone.Frequency(currentScale[stepsCount]).toValue();
-                                // 依據右手拉伸比例，動態對數對應到真實頻率
-                                const liveFreq = lowFreq + (smoothPosition / stepsCount) * (highFreq - lowFreq);
-                                
-                                if (!activeNote) {
-                                    backupSynth.triggerAttack(liveFreq);
-                                    activeNote = "glissando";
-                                } else {
-                                    backupSynth.frequency.setValueAtTime(liveFreq, Tone.now());
-                                }
-                                noteDisplay.innerText = `~ ${Math.round(liveFreq)} Hz`;
-                                positionDisplay.innerText = "長號拉管滑音中";
-                            } 
-                            else if (currentInstrument === 'guzheng' && leftHandY !== null) {
-                                // 【真·古箏左手壓音機制】依據左手上下位置，對右手撥出的弦進行實時 Pitch Bend 微調
-                                const centerCheckY = canvasElement.height * 0.5;
-                                const bendAmount = ((centerCheckY - leftHandY) / centerCheckY) * 200; // 上下壓弦幅度 ±200 分 (Cents)
-                                
-                                const activeSampler = getCurrentSampler();
-                                if (activeSampler.loaded) {
-                                    // 實時改變取樣機與備用引擎的 detune 實現揉弦顫音
-                                    activeSampler.detune = bendAmount;
-                                }
-                                backupSynth.detune.setValueAtTime(bendAmount, Tone.now());
-                                positionDisplay.innerText = `左手壓音: ${Math.round(bendAmount)} cents`;
-                            }
-                        }
-
-                        // 吸附模式或古箏右發弦判定
                         const isInGuzhengRange = currentInstrument === 'trombone' || (handX > 40 && handX < canvasElement.width - 40);
 
-                        if (currentPlayMode === 'quantize' && targetNote !== activeNote && isInGuzhengRange) {
-                            if (activeNote) { tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease(); }
+                        if (targetNote !== activeNote && isInGuzhengRange) {
+                            if (activeNote) { tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); }
                             const activeSampler = getCurrentSampler();
                             if (activeSampler.loaded) { activeSampler.triggerAttack(targetNote); } 
                             else { backupSynth.triggerAttack(targetNote); }
@@ -617,7 +544,7 @@
                         updateGraph(smoothPosition);
                     } else {
                         if (activeNote) {
-                            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease();
+                            tromboneSampler.releaseAll(); guzhengSampler.releaseAll();
                             activeNote = null; noteDisplay.innerText = "--"; positionDisplay.innerText = "等待動作...";
                         }
                         updateGraph(null);
