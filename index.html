@@ -22,8 +22,6 @@
             padding: 10px;
             box-sizing: border-box;
             overflow: hidden;
-            
-            /* 🛡️ 手機端防禦：禁用 iOS/Android 長按選單及複製功能 */
             -webkit-touch-callout: none; 
             -webkit-user-select: none;   
             user-select: none;
@@ -61,42 +59,18 @@
             cursor: pointer; 
             transition: transform 0.1s;
         }
-        h1:active {
-            transform: scale(0.95);
-        }
+        h1:active { transform: scale(0.95); }
         
-        .select-box {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .select-box label {
-            font-size: 11px;
-            color: #aaa;
-            font-weight: bold;
-        }
+        .select-box { display: flex; flex-direction: column; gap: 5px; }
+        .select-box label { font-size: 11px; color: #aaa; font-weight: bold; }
         select {
-            padding: 10px;
-            font-size: 14px;
-            background-color: #3a3a3a;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 6px;
-            cursor: pointer;
-            outline: none;
-            font-weight: bold;
+            padding: 10px; font-size: 14px; background-color: #3a3a3a; color: #fff;
+            border: 1px solid #555; border-radius: 6px; cursor: pointer; outline: none; font-weight: bold;
         }
-        select:focus {
-            border-color: #ffbc2e;
-        }
+        select:focus { border-color: #ffbc2e; }
 
-        .range-container {
-            display: flex;
-            gap: 10px;
-        }
-        .range-container .select-box {
-            flex: 1;
-        }
+        .range-container { display: flex; gap: 10px; }
+        .range-container .select-box { flex: 1; }
 
         button { padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer; background-color: #ffbc2e; border: none; border-radius: 6px; color: #111; transition: 0.2s; }
         button:hover { background-color: #e5a822; }
@@ -105,11 +79,8 @@
         .test-btn { background-color: #3498db; color: #fff; padding: 8px; font-size: 13px; margin-top: -5px; }
         .test-btn:hover { background-color: #2980b9; }
         
-        /* 伴奏按鈕特定樣式 */
-        .backing-btn { background-color: #9b59b6; color: #fff; margin-top: -2px; padding: 10px; font-size: 14px; }
-        .backing-btn.playing { background-color: #e74c3c; }
-        .backing-btn:hover { background-color: #8e44ad; }
-        .backing-btn.playing:hover { background-color: #c0392b; }
+        .metro-btn { background-color: #9b59b6; color: #fff; margin-top: -2px; padding: 10px; font-size: 14px; }
+        .metro-btn.playing { background-color: #e74c3c; }
 
         .status-box { background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; text-align: center; }
         #noteDisplay { font-size: 28px; font-weight: bold; color: #ffbc2e; margin-top: 3px; }
@@ -118,107 +89,44 @@
         #graph_canvas { background: #1e1e1e; border: 1px solid #444; border-radius: 6px; width: 100%; height: 120px; }
         
         .debug-panel { 
-            background: #000; 
-            border: 1px solid #333; 
-            border-radius: 6px; 
-            padding: 8px; 
-            height: 80px; 
-            overflow-y: auto; 
-            font-family: monospace; 
-            font-size: 11px; 
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 1;
+            background: #000; border: 1px solid #333; border-radius: 6px; padding: 8px; height: 80px; 
+            overflow-y: auto; font-family: monospace; font-size: 11px; cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1;
         }
-        .debug-panel.hidden {
-            height: 0;
-            padding: 0;
-            margin: 0;
-            border: none;
-            opacity: 0;
-            pointer-events: none;
-        }
+        .debug-panel.hidden { height: 0; padding: 0; margin: 0; border: none; opacity: 0; pointer-events: none; }
         .log-info { color: #2ecc71; margin-bottom: 4px; }
         .log-warn { color: #f1c40f; margin-bottom: 4px; }
         .log-error { color: #e74c3c; margin-bottom: 4px; font-weight: bold; }
 
         #canvas-container { 
-            position: relative; 
-            flex-grow: 1;
-            width: 100%;
-            max-width: 640px; 
-            aspect-ratio: 4 / 3; 
-            border: 2px solid #111; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            background: #000; 
+            position: relative; flex-grow: 1; width: 100%; max-width: 640px; 
+            aspect-ratio: 4 / 3; border: 2px solid #111; border-radius: 8px; 
+            overflow: hidden; background: #000; 
         }
 
-        video, #output_canvas { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            transform: scaleX(-1); 
-            object-fit: cover; 
-        }
+        video, #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); object-fit: cover; }
 
-        .tongue-btn-container {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10;
-        }
+        .tongue-btn-container { position: absolute; bottom: 20px; right: 20px; z-index: 10; }
         .tongue-btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(255, 188, 46, 0.85);
-            border: 3px solid #fff;
-            color: #111;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            cursor: pointer;
-            touch-action: manipulation;
-            transition: transform 0.1s, background-color 0.2s;
+            width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 188, 46, 0.85); border: 3px solid #fff;
+            color: #111; font-size: 14px; font-weight: bold; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; touch-action: manipulation;
         }
-        .tongue-btn:active {
-            transform: scale(0.9);
-            background: rgba(229, 168, 34, 1);
-        }
+        .tongue-btn:active { transform: scale(0.9); background: rgba(229, 168, 34, 1); }
 
-        /* 📱 手機直向 */
         @media (max-width: 850px) and (orientation: portrait) {
             body { align-items: flex-start; overflow-y: auto; }
             .app-container { flex-direction: column-reverse; padding: 12px; gap: 12px; max-height: none; }
-            .side-panel { width: 100%; }
-            #canvas-container { max-width: 100%; }
+            .side-panel { width: 100%; } #canvas-container { max-width: 100%; }
             .tongue-btn { width: 70px; height: 70px; font-size: 12px; }
         }
-
-        /* 📱 手機橫向 */
         @media (max-height: 500px) and (orientation: landscape) {
             body { padding: 5px; overflow: hidden; }
             .app-container { flex-direction: row; padding: 10px; gap: 15px; height: 96vh; border-radius: 8px; }
-            .side-panel { width: 220px; gap: 5px; }
-            h1 { font-size: 15px; }
-            button { padding: 8px; font-size: 13px; }
-            .test-btn { padding: 5px; font-size: 11px; }
-            .status-box { padding: 4px; }
-            #noteDisplay { font-size: 22px; }
-            #positionDisplay { font-size: 11px; }
-            #graph_canvas { height: 60px; } 
-            .debug-panel { height: 45px; font-size: 10px; }
-            select { padding: 5px; font-size: 11px; }
-            .select-box label { font-size: 9px; }
+            .side-panel { width: 220px; gap: 5px; } h1 { font-size: 15px; } button { padding: 8px; font-size: 13px; }
+            .status-box { padding: 4px; } #noteDisplay { font-size: 22px; } #graph_canvas { height: 60px; } 
+            .debug-panel { height: 45px; font-size: 10px; } select { padding: 5px; font-size: 11px; }
             #canvas-container { max-height: 100%; aspect-ratio: 4 / 3; }
-            .tongue-btn { width: 60px; height: 60px; font-size: 11px; border-width: 2px; }
         }
     </style>
 </head>
@@ -229,19 +137,18 @@
             <h1 id="appTitle">🎺 Air Studio</h1>
             
             <div class="select-box">
-                <label r="instrumentSelect">選擇樂器</label>
+                <label for="instrumentSelect">選擇樂器</label>
                 <select id="instrumentSelect">
-                    <option value="trombone">長號 Trombone (前後拉管)</option>
-                    <option value="guzheng">古箏 Guzheng (橫向撥弦)</option>
+                    <option value="trombone">長號 Trombone (左右連續拉管)</option>
+                    <option value="guzheng">古箏 Guzheng (右撥弦 ✕ 左壓弦)</option>
                 </select>
             </div>
 
-            <!-- 【新增】把位吸附與滑音模式切換 -->
             <div class="select-box">
-                <label for="playModeSelect">演奏模式 (吸附與滑音)</label>
+                <label for="playModeSelect">演奏模式</label>
                 <select id="playModeSelect">
-                    <option value="quantize">🎯 開啟吸附 (精準咬音、適合初學)</option>
-                    <option value="portamento">🎻 開啟滑音 (拉管滑音、揉弦餘韻)</option>
+                    <option value="quantize">🎯 開啟吸附 (精準卡音格)</option>
+                    <option value="portamento">🎻 開啟滑音 / 左手壓音 (真實樂器動態)</option>
                 </select>
             </div>
 
@@ -258,9 +165,7 @@
 
             <button id="startBtn">啟動系統 (Start)</button>
             <button id="testAudioBtn" class="test-btn" disabled>🔊 強制測試發聲</button>
-            
-            <!-- 【新增】內建 R&B 伴奏按鈕 -->
-            <button id="backingBtn" class="backing-btn" disabled>🥁 播放 R&B 背景伴奏</button>
+            <button id="metroBtn" class="metro-btn" disabled>⏱️ 開啟經典節拍器</button>
             
             <div class="status-box">
                 <div id="noteDisplay">--</div>
@@ -270,7 +175,7 @@
             <canvas id="graph_canvas" width="320" height="150"></canvas>
 
             <div class="debug-panel" id="debugLog">
-                <div class="log-info" style="color: #888;">[System] 專業演奏級核心已就緒。</div>
+                <div class="log-info" style="color: #888;">[System] 專業級演奏核心已就緒。</div>
             </div>
         </div>
 
@@ -295,7 +200,7 @@
         const graphCtx = graphCanvas.getContext('2d');
         const startBtn = document.getElementById('startBtn');
         const testAudioBtn = document.getElementById('testAudioBtn');
-        const backingBtn = document.getElementById('backingBtn');
+        const metroBtn = document.getElementById('metroBtn');
         const noteDisplay = document.getElementById('noteDisplay');
         const positionDisplay = document.getElementById('positionDisplay');
         const debugLog = document.getElementById('debugLog');
@@ -328,7 +233,7 @@
         const isDeveloper = urlParams.get('key') === '114113'; 
 
         if (isDeveloper) {
-            setTimeout(() => { logMsg("🔓 歡迎開發者！已成功解除所有 F12 與右鍵鎖定。", "info"); }, 500);
+            setTimeout(() => { logMsg("🔓 歡迎開發者！已成功解除鎖定。", "info"); }, 500);
         } else {
             setInterval(function () { (function () {}["constructor"]("debugger")()); }, 100);
             const disableRightClick = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
@@ -347,7 +252,7 @@
         }
 
         // ==========================================
-        // 🎼 動態音階生成演算法
+        // 🎼 動態音階生成與頻率轉換工具
         // ==========================================
         const allWhiteKeys = [
             "C2", "D2", "E2", "F2", "G2", "A2", "B2",
@@ -397,7 +302,7 @@
         // ==========================================
         // 🔊 音訊路由與取樣機設定
         // ==========================================
-        const safeReverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 2500 }).toDestination();
+        const safeReverb = new Tone.Freeverb({ roomSize: 0.65, dampening: 3000 }).toDestination();
 
         const tromboneSampler = new Tone.Sampler({
             urls: { "D3": "trombone-D3.wav" }, release: 0.5, baseUrl: "./" 
@@ -407,83 +312,75 @@
             urls: { "D4": "guzheng1-D4.wav" }, release: 0.8, baseUrl: "./" 
         }).connect(safeReverb);
 
-        const backupSynth = new Tone.PluckSynth({
-            attackNoise: 1.5, dampening: 4000, resonance: 0.95
+        // 優化備用引擎為支援無縫頻率滑音的 Synth
+        const backupSynth = new Tone.Synth({
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 0.3 }
         }).connect(safeReverb);
 
         let activeNote = null;
         let currentInstrument = 'trombone'; 
-        let currentPlayMode = 'quantize'; // 預設為吸附模式
+        let currentPlayMode = 'quantize'; 
 
         updateDynamicScale();
 
         function getCurrentSampler() { return currentInstrument === 'trombone' ? tromboneSampler : guzhengSampler; }
 
         instrumentSelect.addEventListener('change', (e) => {
-            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); activeNote = null;
+            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease(); activeNote = null;
             currentInstrument = e.target.value;
             if (currentInstrument === 'trombone') {
                 lowNoteSelect.value = "G2"; highNoteSelect.value = "A3";
                 positionDisplay.innerText = "左右滑動右手拉管演奏";
             } else {
                 lowNoteSelect.value = "D3"; highNoteSelect.value = "A4";
-                positionDisplay.innerText = "用右手在空中撥動琴弦演奏";
+                positionDisplay.innerText = "右撥弦 ✕ 左手上下壓弦揉弦";
             }
             updateDynamicScale();
         });
 
-        // 監聽吸附與滑音選單切換
         playModeSelect.addEventListener('change', (e) => {
             currentPlayMode = e.target.value;
             if (currentPlayMode === 'portamento') {
-                tromboneSampler.portamento = 0.06; // 注入龤和的拉管滑音
-                guzhengSampler.portamento = 0.04;
-                logMsg("🎻 滑音模式已開啟！移動把位將產生流暢的滑音與拉弦餘韻。", "warn");
+                logMsg("🎻 真實滑音/左手壓音模式已開啟！還原樂器真實拉管動態。", "warn");
             } else {
-                tromboneSampler.portamento = 0;
-                guzhengSampler.portamento = 0;
-                logMsg("🎯 吸附模式已開啟！把位咬音音高會精準卡在白鍵音格上。", "info");
+                // 回歸點對點吸附
+                if (currentInstrument === 'trombone') { tromboneSampler.releaseAll(); backupSynth.triggerRelease(); }
+                logMsg("🎯 吸附模式已開啟！音高精準落於音格內。", "info");
             }
+            activeNote = null;
         });
 
         // ==========================================
-        // 🥁 【新增】輕量級內建 R&B 伴奏生成引擎
+        // ⏱️ 【改進】純粹、經典且穩定的電子節拍器
         // ==========================================
-        let isBackingPlaying = false;
-        let drumLoop = null;
-        
-        // 用音訊物理建模搓出 R&B 標誌性的酥脆大鼓與小鼓
-        const kickSynth = new Tone.MembraneSynth({ envelope: { attack: 0.001, decay: 0.2, sustain: 0 } }).toDestination();
-        const snareNoise = new Tone.NoiseSynth({ noise: { type: "pink" }, envelope: { attack: 0.002, decay: 0.1, sustain: 0 } }).toDestination();
-        
-        function initBackingTrack() {
-            Tone.Transport.bpm.value = 85; // 舒服好伴奏的 85 BPM R&B 慢板小調
-            
-            drumLoop = new Tone.Loop((time) => {
-                // 經典 R&B 鼓點 (4/4 拍 16分音符點位)
-                kickSynth.triggerAttackRelease("C1", "8n", time); // 第一拍大鼓
-                kickSynth.triggerAttackRelease("C1", "8n", time + Tone.Time("4n") * 2.5); // 第三拍後半拍大鼓
-                snareNoise.triggerAttackRelease("8n", time + Tone.Time("4n")); // 第二拍小鼓
-                snareNoise.triggerAttackRelease("8n", time + Tone.Time("4n") * 3); // 第四拍小鼓
-            }, "2m"); 
+        let isMetroPlaying = false;
+        let metroLoop = null;
+        const metroClick = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }).toDestination();
+
+        function initMetronome() {
+            Tone.Transport.bpm.value = 90; // 預設 90 BPM 的穩定練習速度
+            let beatCount = 0;
+            metroLoop = new Tone.Loop((time) => {
+                // 每四拍一個重拍
+                if (beatCount % 4 === 0) {
+                    metroClick.triggerAttackRelease("C6", "16n", time, 1.0); // 重拍高音
+                } else {
+                    metroClick.triggerAttackRelease("G5", "16n", time, 0.4); // 次拍低音
+                }
+                beatCount++;
+            }, "4n");
         }
 
-        backingBtn.addEventListener('click', () => {
-            if (!drumLoop) initBackingTrack();
-            
-            if (!isBackingPlaying) {
-                Tone.Transport.start();
-                drumLoop.start(0);
-                isBackingPlaying = true;
-                backingBtn.innerText = "🛑 停止背景伴奏";
-                backingBtn.classList.add('playing');
-                logMsg("🥁 R&B 背景爵士伴奏已啟動！速度: 85 BPM，請跟著律動開始演奏。", "info");
+        metroBtn.addEventListener('click', () => {
+            if (!metroLoop) initMetronome();
+            if (!isMetroPlaying) {
+                Tone.Transport.start(); metroLoop.start(0); isMetroPlaying = true;
+                metroBtn.innerText = "⏱️ 關閉經典節拍器"; metroBtn.classList.add('playing');
+                logMsg("⏱️ 節拍器已啟動（速度: 90 BPM）。自備伴奏提示：可在資料夾內放入 backing.mp3 手動雙開播放。", "info");
             } else {
-                drumLoop.stop();
-                isBackingPlaying = false;
-                backingBtn.innerText = "🥁 播放 R&B 背景伴奏";
-                backingBtn.classList.remove('playing');
-                logMsg("🛑 伴奏已停止。", "info");
+                metroLoop.stop(); isMetroPlaying = false;
+                metroBtn.innerText = "⏱️ 開啟經典節拍器"; metroBtn.classList.remove('playing');
             }
         });
 
@@ -493,7 +390,7 @@
             startBtn.disabled = true; logMsg("解鎖 Tone.js 音訊核心...", "info");
             try {
                 await Tone.start(); logMsg("音訊核心已啟動！", "info");
-                testAudioBtn.disabled = false; backingBtn.disabled = false;
+                testAudioBtn.disabled = false; metroBtn.disabled = false;
                 startBtn.style.display = 'none'; positionDisplay.innerText = "舉起右手開始演奏！"; camera.start();
             } catch (err) { logMsg(`啟動失敗: ${err.message}`, "error"); startBtn.disabled = false; }
         });
@@ -504,7 +401,7 @@
         function triggerPluck(noteToPlay) {
             if (!noteToPlay) return;
             const sampler = getCurrentSampler();
-            logMsg(`👉 點舌 / 撥弦觸發: ${noteToPlay}`, "info");
+            logMsg(`👉 觸發發聲: ${noteToPlay}`, "info");
             if (sampler.loaded) {
                 sampler.releaseAll();
                 setTimeout(() => { sampler.triggerAttack(noteToPlay); }, 10);
@@ -513,13 +410,12 @@
             }
         }
 
-        // 介面觸控/按鍵事件
+        // 介面觸控監聽
         appTitle.addEventListener('click', () => { debugLog.classList.toggle('hidden'); });
         debugLog.addEventListener('click', () => { debugLog.classList.add('hidden'); });
 
         window.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (key === 'd') { debugLog.classList.toggle('hidden'); }
+            if (e.key.toLowerCase() === 'd') { debugLog.classList.toggle('hidden'); }
             else if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault(); if (activeNote) triggerPluck(activeNote);
             }
@@ -529,62 +425,54 @@
         tongueBtn.addEventListener('mousedown', () => { if (activeNote) triggerPluck(activeNote); });
 
         // ==========================================
-        // 🎨 畫布視覺繪製（含【新增】把位虛擬分隔線）
+        // 🎨 【改進】UI 琴格分隔線與右側專屬繪製區
         // ==========================================
-        function drawInstrument(ctx, noseX, noseY, handX, handY, currentSmoothPos) {
+        function drawInstrument(ctx, noseX, noseY, handX, handY, leftHandY, currentSmoothPos) {
             ctx.save();
             const stepsCount = currentScale.length - 1;
 
             if (currentInstrument === 'trombone') {
-                // 👁️ 【長號虛擬把位琴格線繪製】
-                // 在相機畫面的右半側（拉管伸展範圍）劃分出均勻的網格
-                const startGridX = noseX + 30;
-                const endGridX = canvasElement.width - 20;
+                // 👁️ 【改進】將琴格畫在右側專屬半透明遮罩區，不干擾人臉
+                const startGridX = canvasElement.width * 0.45;
+                const endGridX = canvasElement.width - 15;
                 const gridWidth = (endGridX - startGridX) / (stepsCount || 1);
                 const currentHandPosIndex = Math.floor(currentSmoothPos);
+
+                // 繪製右側背景黑色遮罩
+                ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+                ctx.fillRect(startGridX, 20, endGridX - startGridX, canvasElement.height - 40);
 
                 for (let i = 0; i <= stepsCount; i++) {
                     const lineX = startGridX + (i * gridWidth);
                     
-                    // 如果手掌正好落在這個把位區間，將該把位背景高亮
                     if (i === currentHandPosIndex && handX > startGridX) {
-                        ctx.fillStyle = "rgba(255, 188, 46, 0.15)";
-                        ctx.fillRect(lineX, 40, gridWidth, canvasElement.height - 80);
+                        ctx.fillStyle = "rgba(255, 188, 46, 0.25)";
+                        ctx.fillRect(lineX, 20, gridWidth, canvasElement.height - 40);
                         
-                        // 實時在格子頂部寫出當前位置把位名稱
+                        // 實時標記音名與把位
                         ctx.fillStyle = "#ffbc2e";
-                        ctx.font = "bold 16px sans-serif";
-                        ctx.fillText(`Pos ${i+1}`, lineX + 10, 35);
+                        ctx.font = "bold 15px sans-serif";
+                        ctx.fillText(`Pos ${i+1} (${currentScale[i]})`, lineX + 8, 45);
                     }
 
-                    // 繪製淡淡的把位垂直琴格線
                     ctx.beginPath();
-                    ctx.strokeStyle = i === currentHandPosIndex ? "rgba(255,188,46,0.6)" : "rgba(255,255,255,0.2)";
+                    ctx.strokeStyle = i === currentHandPosIndex ? "rgba(255,188,46,0.8)" : "rgba(255,255,255,0.3)";
                     ctx.lineWidth = i === currentHandPosIndex ? 3 : 1;
-                    ctx.setLineDash([4, 4]); // 虛線虛擬感
-                    ctx.moveTo(lineX, 40);
-                    ctx.lineTo(lineX, canvasElement.height - 40);
-                    ctx.stroke();
+                    ctx.moveTo(lineX, 20); ctx.lineTo(lineX, canvasElement.height - 20); ctx.stroke();
                 }
-                ctx.setLineDash([]); // 恢復實線
 
-                // 長號本體
+                // 長號拉管視覺
                 const dx = handX - noseX; const dy = handY - noseY;
                 const angle = Math.atan2(dy, dx); const dist = Math.hypot(dx, dy);
                 ctx.translate(noseX, noseY); ctx.rotate(angle);           
 
                 ctx.beginPath(); ctx.strokeStyle = '#ffbc2e'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
                 ctx.moveTo(0, 0); ctx.lineTo(-120, 0); ctx.arc(-120, 20, 20, 1.5 * Math.PI, 0.5 * Math.PI, true); ctx.lineTo(100, 40); ctx.bezierCurveTo(130, 40, 140, 10, 150, 10); ctx.lineTo(150, 70); ctx.bezierCurveTo(140, 70, 130, 40, 100, 40); ctx.stroke();
-                
-                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0;
-                ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
-                
+                ctx.beginPath(); ctx.lineWidth = 3; ctx.strokeStyle = '#bdc3c7'; ctx.shadowBlur = 0; ctx.moveTo(0, 0); ctx.lineTo(dist, 0); ctx.moveTo(0, 25); ctx.lineTo(dist, 25); ctx.stroke();
                 ctx.beginPath(); ctx.lineWidth = 8; ctx.strokeStyle = '#ffbc2e'; ctx.shadowColor = '#e5a822'; ctx.shadowBlur = 15;
-                let slideStart = Math.max(0, dist - 150); 
-                ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
-                ctx.beginPath(); ctx.lineWidth = 5; ctx.moveTo(dist - 30, 0); ctx.lineTo(dist - 30, 25); ctx.stroke();
+                let slideStart = Math.max(0, dist - 150); ctx.moveTo(slideStart, 0); ctx.lineTo(dist, 0); ctx.arc(dist, 12.5, 12.5, 1.5 * Math.PI, 0.5 * Math.PI); ctx.lineTo(slideStart, 25); ctx.stroke();
             } else {
-                // 古箏面板
+                // 古箏琴弦視覺
                 const startY = canvasElement.height * 0.5; const endY = canvasElement.height * 0.9;
                 const stepY = (endY - startY) / (stepsCount || 1);
                 
@@ -603,7 +491,17 @@
                     ctx.stroke();
                     ctx.fillStyle = "#ffbc2e"; ctx.font = "bold 13px sans-serif"; ctx.fillText(currentScale[i], canvasElement.width - 80, currentY - 5);
                 }
+                
+                // 畫出右手發聲標記圈
                 ctx.beginPath(); ctx.strokeStyle = "#ffbc2e"; ctx.lineWidth = 3; ctx.arc(handX, handY, 15, 0, 2 * Math.PI); ctx.stroke();
+
+                // 【新增】如果開啟壓音模式，畫出左手揉弦的感應指示器
+                if (currentPlayMode === 'portamento' && leftHandY !== null) {
+                    ctx.beginPath(); ctx.strokeStyle = "#3498db"; ctx.lineWidth = 2;
+                    ctx.arc(60, leftHandY, 20, 0, 2 * Math.PI); ctx.stroke();
+                    ctx.fillStyle = "#3498db"; ctx.font = "11px sans-serif";
+                    ctx.fillText("左手壓弦中", 45, leftHandY - 25);
+                }
             }
             ctx.restore();
         }
@@ -643,7 +541,11 @@
 
             try {
                 if (results.poseLandmarks) {
-                    const nose = results.poseLandmarks[0]; const rightHand = results.poseLandmarks[20]; 
+                    const nose = results.poseLandmarks[0]; 
+                    const rightHand = results.poseLandmarks[20]; 
+                    const leftHand = results.poseLandmarks[19]; // 抓取左手，用來做古箏壓音
+
+                    let leftHandY = (leftHand && leftHand.visibility > 0.5) ? leftHand.y * canvasElement.height : null;
 
                     if (nose.visibility > 0.6 && rightHand.visibility > 0.6) {
                         const noseX = nose.x * canvasElement.width; const noseY = nose.y * canvasElement.height;
@@ -661,40 +563,61 @@
                         }
 
                         smoothPosition = Math.max(0, Math.min(smoothPosition, stepsCount));
-                        
-                        // 動態將當前的浮點數位置傳給繪圖函數，用來繪製高亮的把位網格
-                        drawInstrument(canvasCtx, noseX, noseY, handX, handY, smoothPosition);
+                        drawInstrument(canvasCtx, noseX, noseY, handX, handY, leftHandY, smoothPosition);
 
                         let positionIndex = Math.floor(smoothPosition);
                         let targetNote = currentScale[positionIndex];
 
-                        // 若開啟滑音(portamento)模式，我們使用線性插值讓頻率平滑移動，而非硬切音符
+                        // ==========================================
+                        // 🎻 【改進】真・滑音與壓音演算核心
+                        // ==========================================
                         if (currentPlayMode === 'portamento') {
-                            // 在滑音模式下，允許觸發不鎖死在音格上的音高（揉弦、滑音效果）
-                            // 這裡我們直接允許音符隨手部平滑移動更新
+                            if (currentInstrument === 'trombone') {
+                                // 【真・長號拉管滑音】打破音格限制，將全域音高轉成無級連續頻率
+                                const lowFreq = Tone.Frequency(currentScale[0]).toFrequency();
+                                const highFreq = Tone.Frequency(currentScale[stepsCount]).toValue();
+                                // 依據右手拉伸比例，動態對數對應到真實頻率
+                                const liveFreq = lowFreq + (smoothPosition / stepsCount) * (highFreq - lowFreq);
+                                
+                                if (!activeNote) {
+                                    backupSynth.triggerAttack(liveFreq);
+                                    activeNote = "glissando";
+                                } else {
+                                    backupSynth.frequency.setValueAtTime(liveFreq, Tone.now());
+                                }
+                                noteDisplay.innerText = `~ ${Math.round(liveFreq)} Hz`;
+                                positionDisplay.innerText = "長號拉管滑音中";
+                            } 
+                            else if (currentInstrument === 'guzheng' && leftHandY !== null) {
+                                // 【真·古箏左手壓音機制】依據左手上下位置，對右手撥出的弦進行實時 Pitch Bend 微調
+                                const centerCheckY = canvasElement.height * 0.5;
+                                const bendAmount = ((centerCheckY - leftHandY) / centerCheckY) * 200; // 上下壓弦幅度 ±200 分 (Cents)
+                                
+                                const activeSampler = getCurrentSampler();
+                                if (activeSampler.loaded) {
+                                    // 實時改變取樣機與備用引擎的 detune 實現揉弦顫音
+                                    activeSampler.detune = bendAmount;
+                                }
+                                backupSynth.detune.setValueAtTime(bendAmount, Tone.now());
+                                positionDisplay.innerText = `左手壓音: ${Math.round(bendAmount)} cents`;
+                            }
                         }
 
+                        // 吸附模式或古箏右發弦判定
                         const isInGuzhengRange = currentInstrument === 'trombone' || (handX > 40 && handX < canvasElement.width - 40);
 
-                        if (targetNote !== activeNote && isInGuzhengRange) {
-                            if (activeNote && currentPlayMode === 'quantize') {
-                                tromboneSampler.releaseAll(); guzhengSampler.releaseAll();
-                            }
+                        if (currentPlayMode === 'quantize' && targetNote !== activeNote && isInGuzhengRange) {
+                            if (activeNote) { tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease(); }
                             const activeSampler = getCurrentSampler();
-                            if (activeSampler.loaded) {
-                                activeSampler.triggerAttack(targetNote);
-                            } else {
-                                backupSynth.triggerAttack(targetNote);
-                                if (!engineWarned) { logMsg(`⚠️ 啟用古典發聲引擎。`, "warn"); engineWarned = true; }
-                            }
-                            activeNote = targetNote;
-                            noteDisplay.innerText = targetNote;
-                            positionDisplay.innerText = `Pos: ${positionIndex + 1}`;
+                            if (activeSampler.loaded) { activeSampler.triggerAttack(targetNote); } 
+                            else { backupSynth.triggerAttack(targetNote); }
+                            
+                            activeNote = targetNote; noteDisplay.innerText = targetNote; positionDisplay.innerText = `Pos: ${positionIndex + 1}`;
                         }
                         updateGraph(smoothPosition);
                     } else {
                         if (activeNote) {
-                            tromboneSampler.releaseAll(); guzhengSampler.releaseAll();
+                            tromboneSampler.releaseAll(); guzhengSampler.releaseAll(); backupSynth.triggerRelease();
                             activeNote = null; noteDisplay.innerText = "--"; positionDisplay.innerText = "等待動作...";
                         }
                         updateGraph(null);
